@@ -1,0 +1,117 @@
+# =============================================================================
+# Python
+# =============================================================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+eggs/
+parts/
+var/
+sdist/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+.installed.cfg
+lib/
+lib64/
+MANIFEST
+
+# Virtual environments
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Distribution / packaging
+.Python
+develop-eggs/
+downloads/
+
+# =============================================================================
+# Testing & Coverage
+# =============================================================================
+.pytest_cache/
+.mypy_cache/
+.hypothesis/
+.tox/
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+*.py,cover
+nosetests.xml
+pytest.xml
+
+# =============================================================================
+# Type Checking
+# =============================================================================
+.dmypy.json
+dmypy.json
+.pytype/
+.pyre/
+
+# =============================================================================
+# IDEs & Editors
+# =============================================================================
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# =============================================================================
+# Project-specific
+# =============================================================================
+# Environment & secrets
+.env
+.env.local
+.env.*.local
+*.env
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Storage & output directories
+/storage/
+/reports/output/
+
+# Logs
+logs/
+*.log
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# Playwright
+playwright/.cache/
+
+# Alembic
+alembic/versions/*.pyc
+
+# MyPy cache
+.mypy_cache/
+
+# Jupyter Notebooks checkpoints
+.ipynb_checkpoints/
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# Profiling
+*.prof

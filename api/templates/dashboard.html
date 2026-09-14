@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+
+{% block title %}מסך בדיקה מהירה — לידים ומכרזים{% endblock %}
+
+{% block content %}
+<!-- Top Metrics Row -->
+<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px;">
+    <div class="card" style="margin-bottom: 0; padding: 16px; text-align: center;">
+        <div style="font-size: 28px; font-weight: bold; color: var(--accent-blue);">{{ stats.total }}</div>
+        <div style="font-size: 13px; color: var(--text-muted);">סה"כ הזדמנויות במערכת</div>
+    </div>
+    <div class="card" style="margin-bottom: 0; padding: 16px; text-align: center;">
+        <div style="font-size: 28px; font-weight: bold; color: var(--accent-red);">{{ stats.fast_track }}</div>
+        <div style="font-size: 13px; color: var(--text-muted);">🔴 במסלול מהיר (Fast-Track)</div>
+    </div>
+    <div class="card" style="margin-bottom: 0; padding: 16px; text-align: center;">
+        <div style="font-size: 28px; font-weight: bold; color: var(--accent-green);">{{ stats.fit }}</div>
+        <div style="font-size: 13px; color: var(--text-muted);">🎯 מתאימים לפרופיל הקבלן</div>
+    </div>
+</div>
+
+<!-- Quick Manual Lead Submission Form -->
+<div class="card">
+    <div class="card-header">
+        <div class="card-title">⚡ קליטת ליד מהירה (הדבקה מוואטסאפ / פייסבוק)</div>
+    </div>
+    <div class="card-body">
+        <form hx-post="/webhooks/manual-lead" hx-swap="none" hx-on::after-request="this.reset(); alert('הליד נשלח לעיבוד מובנה וניקוד!');">
+            <div style="display: flex; gap: 12px;">
+                <textarea name="content" placeholder="הדבק כאן הודעת וואטסאפ, פוסט מפייסבוק או פנייה ישירה..." rows="2" style="flex: 1; padding: 10px; border-radius: 6px; border: 1px solid var(--border); font-family: inherit; font-size: 14px; resize: vertical;" required></textarea>
+                <button type="submit" class="btn btn-primary" style="align-self: flex-end; padding: 12px 24px;">קלוט ובצע חילוץ LLM</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Section 1: Recent Opportunities (Leads & Tenders) -->
+<div class="card">
+    <div class="card-header">
+        <div class="card-title">📥 הזדמנויות חדשות לטיפול מיידי</div>
+        <span style="font-size: 13px; color: var(--text-muted);">ממוין לפי מסלול מהיר וציון התאמה</span>
+    </div>
+    <div class="card-body" style="padding: 0;">
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 100px;">סוג ומסלול</th>
+                    <th>כותרת ותיאור</th>
+                    <th>מקצוע ומיקום</th>
+                    <th>תקציב משוער</th>
+                    <th>ציון התאמה</th>
+                    <th>סטטוס התאמה</th>
+                    <th style="width: 180px;">פעולות מהירות</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for opp in opportunities %}
+                <tr id="opp-row-{{ opp.id }}">
+                    <td>
+                        {% if opp.is_fast_track %}
+                            <span class="badge badge-fast">🔴 Fast-Track</span>
+                        {% elif opp.opportunity_type == 'tender' %}
+                            <span class="badge badge-tender">🏛️ מכרז</span>
+                        {% else %}
+                            <span class="badge badge-lead">🔨 ליד</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="/opportunity/{{ opp.id }}" style="font-weight: 600; color: var(--text-main); text-decoration: none;">
+                            {{ opp.title_value or 'ללא כותרת' }}
+                        </a>
+                        {% if opp.tender_number %}
+                            <div style="font-size: 12px; color: var(--text-muted);">מכרז: {{ opp.tender_number }}</div>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div>{{ opp.work_type_value or 'כללי' }}</div>
+                        <div style="font-size: 12px; color: var(--text-muted);">📍 {{ opp.location_value or 'ארצי' }}</div>
+                    </td>
+                    <td>
+                        {% if opp.budget_value %}
+                            <b>{{ "{:,.0f}".format(opp.budget_value) }} ₪</b>
+                        {% else %}
+                            <span style="color: var(--text-muted);">לא צוין</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div style="font-weight: 700; color: {% if opp.score_business_fit and opp.score_business_fit >= 70 %}var(--accent-green){% else %}var(--accent-yellow){% endif %};">
+                            {{ opp.score_business_fit or 0 }}/100
+                        </div>
+                    </td>
+                    <td>
+                        {% if opp.match_status and opp.match_status.value == 'fit' %}
+                            <span class="badge badge-fit">מתאים</span>
+                        {% elif opp.match_status and opp.match_status.value == 'no_fit' %}
+                            <span class="badge" style="background:#f1f5f9; color:#94a3b8;">לא מתאים</span>
+                        {% else %}
+                            <span class="badge badge-review">דורש בדיקה</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div style="display: flex; gap: 6px;">
+                            <button class="btn btn-outline" style="padding: 4px 8px; font-size: 12px;"
+                                    hx-post="/api/opportunities/{{ opp.id }}/action"
+                                    hx-vals='{"action_type": "contacted", "notes": "נוצר קשר ראשוני"}'
+                                    hx-target="#opp-row-{{ opp.id }}"
+                                    hx-swap="outerHTML">
+                                📞 צור קשר
+                            </button>
+                            <button class="btn btn-outline" style="padding: 4px 8px; font-size: 12px; color: var(--accent-red);"
+                                    hx-post="/api/opportunities/{{ opp.id }}/dismiss"
+                                    hx-target="#opp-row-{{ opp.id }}"
+                                    hx-swap="outerHTML">
+                                ✕ דחה
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" style="text-align: center; padding: 30px; color: var(--text-muted);">
+                        אין כרגע הזדמנויות חדשות. הפעל סריקה כדי לעדכן.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Section 2: Active Tenders Timeline -->
+<div class="card">
+    <div class="card-header">
+        <div class="card-title">⏰ מכרזים פעילים עם מועד הגשה מתקרב</div>
+    </div>
+    <div class="card-body" style="padding: 0;">
+        <table>
+            <thead>
+                <tr>
+                    <th>מספר מכרז</th>
+                    <th>נושא המכרז</th>
+                    <th>גוף מפרסם</th>
+                    <th>תאריך אחרון להגשה</th>
+                    <th>פעולה</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for tender in active_tenders %}
+                <tr>
+                    <td><b>{{ tender.tender_number or '-' }}</b></td>
+                    <td>{{ tender.title_value or '-' }}</td>
+                    <td>{{ tender.publisher_name or '-' }}</td>
+                    <td style="color: var(--accent-red); font-weight: bold;">
+                        {{ tender.deadline_value.strftime('%d/%m/%Y %H:%M') if tender.deadline_value else '-' }}
+                    </td>
+                    <td>
+                        <a href="/opportunity/{{ tender.id }}" class="btn btn-outline" style="font-size: 12px; padding: 4px 10px;">
+                            פרטים ומסמכים
+                        </a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" style="text-align: center; padding: 20px; color: var(--text-muted);">
+                        לא נמצאו מכרזים עם מועדי הגשה קרובים
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Section 3: Daily Reports -->
+<div class="card">
+    <div class="card-header">
+        <div class="card-title">📊 דוחות יומיים מסכמים</div>
+        <form hx-post="/api/reports/daily/generate" hx-swap="none" hx-on::after-request="location.reload();">
+            <button type="submit" class="btn btn-outline" style="font-size: 12px;">הפק דוח להיום כעת</button>
+        </form>
+    </div>
+    <div class="card-body">
+        {% if saved_reports %}
+            <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                {% for rep_date in saved_reports %}
+                    <a href="/api/reports/daily/{{ rep_date }}/html" target="_blank" class="btn btn-outline" style="display: flex; align-items: center; gap: 8px;">
+                        <span>📄</span>
+                        <span>דוח מיום {{ rep_date }}</span>
+                    </a>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p style="color: var(--text-muted); font-size: 14px;">עדיין לא הופקו דוחות יומיים שמורים. לחץ על הכפתור למעלה להפקת הדוח הראשון.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}מערכת איתור ולכידת לידים ומכרזים{% endblock %}</title>
+    <!-- HTMX for reactive UI without page reload -->
+    <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+    <style>
+        :root {
+            --primary: #0f172a;
+            --primary-light: #1e293b;
+            --accent-blue: #2563eb;
+            --accent-green: #16a34a;
+            --accent-red: #dc2626;
+            --accent-yellow: #ca8a04;
+            --bg-page: #f8fafc;
+            --bg-card: #ffffff;
+            --border: #e2e8f0;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bg-page);
+            color: var(--text-main);
+            direction: rtl;
+            text-align: right;
+            line-height: 1.5;
+        }
+
+        /* Navbar */
+        .navbar {
+            background-color: var(--primary);
+            color: #ffffff;
+            padding: 14px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .navbar-brand {
+            font-size: 18px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+            color: #ffffff;
+        }
+        .nav-links {
+            display: flex;
+            gap: 20px;
+            font-size: 14px;
+        }
+        .nav-links a {
+            color: #cbd5e1;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        .nav-links a:hover {
+            color: #ffffff;
+        }
+
+        /* Layout Container */
+        .container {
+            max-width: 1200px;
+            margin: 24px auto;
+            padding: 0 16px;
+        }
+
+        /* Cards */
+        .card {
+            background: var(--bg-card);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            margin-bottom: 24px;
+            overflow: hidden;
+        }
+        .card-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #ffffff;
+        }
+        .card-title {
+            font-size: 17px;
+            font-weight: 700;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .card-body {
+            padding: 20px;
+        }
+
+        /* Badges */
+        .badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 9999px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .badge-fast { background: #fee2e2; color: #991b1b; }
+        .badge-fit { background: #dcfce7; color: #166534; }
+        .badge-review { background: #fef9c3; color: #854d0e; }
+        .badge-tender { background: #e0e7ff; color: #3730a3; }
+        .badge-lead { background: #f1f5f9; color: #475569; }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 7px 14px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            border: 1px solid transparent;
+            text-decoration: none;
+            transition: all 0.15s ease-in-out;
+        }
+        .btn-primary { background: var(--accent-blue); color: #ffffff; }
+        .btn-primary:hover { background: #1d4ed8; }
+        .btn-success { background: var(--accent-green); color: #ffffff; }
+        .btn-danger { background: var(--accent-red); color: #ffffff; }
+        .btn-outline { background: transparent; border-color: var(--border); color: var(--text-main); }
+        .btn-outline:hover { background: #f1f5f9; }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: right;
+            font-size: 14px;
+        }
+        th, td {
+            padding: 12px 14px;
+            border-bottom: 1px solid var(--border);
+        }
+        th {
+            background-color: #f8fafc;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+        tr:hover {
+            background-color: #f8fafc;
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 30px 16px;
+            font-size: 13px;
+            color: var(--text-muted);
+            border-top: 1px solid var(--border);
+            margin-top: 40px;
+        }
+    </style>
+</head>
+<body dir="rtl" style="text-align: right;">
+    <nav class="navbar">
+        <a href="/" class="navbar-brand">
+            <span>🏗️</span>
+            <span>מערכת איתור ולכידת לידים ומכרזים</span>
+        </a>
+        <div class="nav-links">
+            <a href="/">מסך בדיקה מהירה</a>
+            <a href="/api/reports/list">ארכיון דוחות</a>
+            <a href="/docs" target="_blank">API Docs</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        {% block content %}{% endblock %}
+    </div>
+
+    <footer>
+        מערכת מודולרית לניהול הזדמנויות עסקיות עבור קבלנים | Antigravity 2.0
+    </footer>
+</body>
+</html>

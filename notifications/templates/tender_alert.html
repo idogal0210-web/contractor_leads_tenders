@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head>
+    <meta charset="UTF-8">
+    <title>התראת מכרז חדש</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; direction: rtl; text-align: right; background-color: #f8fafc; margin: 0; padding: 20px; color: #1e293b; }
+        .card { max-width: 650px; margin: 0 auto; background: #ffffff; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; overflow: hidden; }
+        .header { padding: 20px; background: #0f172a; color: #ffffff; }
+        .header.fast-track { background: #b91c1c; }
+        .badge { display: inline-block; padding: 4px 12px; border-radius: 9999px; font-size: 12px; font-weight: bold; background: #e0e7ff; color: #3730a3; }
+        .content { padding: 24px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .field-group { margin-bottom: 16px; border-bottom: 1px solid #f1f5f9; padding-bottom: 12px; }
+        .field-label { font-size: 13px; color: #64748b; font-weight: 600; margin-bottom: 4px; }
+        .field-value { font-size: 16px; font-weight: 500; color: #0f172a; }
+        .events-table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+        .events-table th, .events-table td { padding: 8px 12px; border: 1px solid #e2e8f0; text-align: right; font-size: 14px; }
+        .events-table th { background: #f8fafc; color: #475569; }
+        .btn { display: inline-block; background: #0284c7; color: #ffffff !important; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold; margin-top: 16px; text-align: center; }
+        .footer { padding: 16px 24px; background: #f8fafc; font-size: 12px; color: #94a3b8; text-align: center; border-top: 1px solid #e2e8f0; }
+    </style>
+</head>
+<body dir="rtl" style="text-align: right;">
+    <div class="card">
+        <div class="header {% if is_fast_track %}fast-track{% endif %}">
+            {% if is_fast_track %}
+                <span class="badge" style="background:#fee2e2; color:#991b1b;">🔴 מכרז במסלול מהיר</span>
+            {% else %}
+                <span class="badge">🏛️ מכרז ציבורי חדש</span>
+            {% endif %}
+            <h2 style="margin: 10px 0 0 0; font-size: 20px;">{{ opportunity.title or 'מכרז ציבורי' }}</h2>
+            {% if opportunity.publisher_name %}
+                <div style="font-size: 14px; color: #cbd5e1; margin-top: 4px;">{{ opportunity.publisher_name }}</div>
+            {% endif %}
+        </div>
+        <div class="content">
+            <div class="grid">
+                <div class="field-group">
+                    <div class="field-label">📑 מספר מכרז</div>
+                    <div class="field-value">{{ opportunity.tender_number or 'לא צוין' }}</div>
+                </div>
+                <div class="field-group">
+                    <div class="field-label">📍 מיקום</div>
+                    <div class="field-value">{{ opportunity.location or 'ארצי' }}</div>
+                </div>
+            </div>
+
+            <div class="grid">
+                <div class="field-group">
+                    <div class="field-label">🛠️ תחום ראשי</div>
+                    <div class="field-value">{{ opportunity.work_type or 'בינוי / תשתיות' }}</div>
+                </div>
+                <div class="field-group">
+                    <div class="field-label">🎯 ציון התאמה</div>
+                    <div class="field-value">{{ opportunity.score_business_fit or 0 }}/100</div>
+                </div>
+            </div>
+
+            <div class="field-group">
+                <div class="field-label">⏰ מועד אחרון להגשה</div>
+                <div class="field-value" style="color: #b91c1c; font-weight: bold;">
+                    {{ opportunity.deadline or 'ראה מסמכי מכרז' }}
+                </div>
+            </div>
+
+            {% if opportunity.tender_events and opportunity.tender_events|length > 0 %}
+                <div class="field-group">
+                    <div class="field-label">📅 אירועים ולוח זמנים</div>
+                    <table class="events-table">
+                        <thead>
+                            <tr>
+                                <th>סוג אירוע</th>
+                                <th>תאריך ושעה</th>
+                                <th>הערות</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for ev in opportunity.tender_events %}
+                            <tr>
+                                <td>{{ ev.event_type }}</td>
+                                <td>{{ ev.event_date or 'לא נקבע' }}</td>
+                                <td>{{ ev.notes or '-' }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endif %}
+
+            {% if opportunity.source_url %}
+                <div style="text-align: center; margin-top: 20px;">
+                    <a href="{{ opportunity.source_url }}" class="btn">צפייה במסמכי המכרז המקוריים</a>
+                </div>
+            {% endif %}
+        </div>
+        <div class="footer">
+            מערכת מעקב מכרזים לקבלנים — עדכון גרסאות ומועדים אוטומטי
+        </div>
+    </div>
+</body>
+</html>

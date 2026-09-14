@@ -1,0 +1,34 @@
+{
+  "id": 1,
+  "name": "קבלן MVP",
+  "service_area": "ארצי",
+  "trades": [
+    "general_contractor",
+    "hvac",
+    "plumbing",
+    "real_estate_development",
+    "interior_design",
+    "maintenance_type5",
+    "painting",
+    "earthworks",
+    "electrical"
+  ],
+  "excluded_trades": [],
+  "min_project_value": null,
+  "max_project_value": null,
+  "available_from": "2024-01-01",
+  "classifications": ["GC", "HVAC", "Electrical", "Plumbing"],
+  "certifications": [],
+  "bond_capacity": null,
+  "trade_keywords_hebrew": {
+    "general_contractor": ["קבלן ראשי", "שיפוץ כללי", "בנייה", "קבלן בניין"],
+    "hvac": ["מזגן", "HVAC", "מיזוג אוויר", "מערכת קירור", "מערכת חימום"],
+    "plumbing": ["שרברב", "אינסטלציה", "צנרת", "ברז", "ניקוז"],
+    "real_estate_development": ["פיתוח נדלן", "בנייה חדשה", "יזמות"],
+    "interior_design": ["עיצוב פנים", "פנים", "נגרות", "גבס"],
+    "maintenance_type5": ["תחזוקה", "אחזקה", "סוג 5", "תיקון"],
+    "painting": ["צבע", "טיח", "ציפוי"],
+    "earthworks": ["עפר", "תשתיות", "עבודות עפר", "חפירה"],
+    "electrical": ["חשמל", "חשמלאי", "פאנל", "גנרטור", "תשתית חשמל"]
+  }
+}

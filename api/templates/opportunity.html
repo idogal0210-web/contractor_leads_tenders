@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+
+{% block title %}פרטי הזדמנות — {{ opportunity.title_value or 'ללא כותרת' }}{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 16px;">
+    <a href="/" class="btn btn-outline" style="font-size: 13px;">⬅️ חזרה למסך בדיקה מהירה</a>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <div>
+            <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 6px;">
+                {% if opportunity.is_fast_track %}
+                    <span class="badge badge-fast">🔴 מסלול מהיר (Fast-Track)</span>
+                {% endif %}
+                {% if opportunity.opportunity_type == 'tender' %}
+                    <span class="badge badge-tender">🏛️ מכרז ציבורי</span>
+                {% else %}
+                    <span class="badge badge-lead">🔨 ליד פרטי</span>
+                {% endif %}
+                {% if opportunity.match_status and opportunity.match_status.value == 'fit' %}
+                    <span class="badge badge-fit">התאמה מלאה לפרופיל</span>
+                {% endif %}
+            </div>
+            <h1 style="font-size: 22px; color: var(--primary);">{{ opportunity.title_value or 'ללא כותרת' }}</h1>
+            {% if opportunity.publisher_name %}
+                <div style="color: var(--text-muted); font-size: 14px; margin-top: 4px;">גוף מפרסם: {{ opportunity.publisher_name }}</div>
+            {% endif %}
+        </div>
+        <div>
+            <div style="text-align: left;">
+                <div style="font-size: 26px; font-weight: bold; color: var(--accent-blue);">
+                    {{ opportunity.score_business_fit or 0 }}/100
+                </div>
+                <div style="font-size: 12px; color: var(--text-muted);">ציון התאמה עסקית</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card-body">
+        <!-- ניקוד מפורט -->
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px; padding: 16px; background: #f8fafc; border-radius: 8px; border: 1px solid var(--border);">
+            <div>
+                <div style="font-size: 12px; color: var(--text-muted);">התאמה עסקית (מקצוע ומיקום)</div>
+                <div style="font-size: 18px; font-weight: bold;">{{ opportunity.score_business_fit or 0 }}/100</div>
+            </div>
+            <div>
+                <div style="font-size: 12px; color: var(--text-muted);">דחיפות וטריות</div>
+                <div style="font-size: 18px; font-weight: bold;">{{ opportunity.score_urgency or 0 }}/100</div>
+            </div>
+            <div>
+                <div style="font-size: 12px; color: var(--text-muted);">ביטחון בחילוץ עובדות</div>
+                <div style="font-size: 18px; font-weight: bold;">{{ opportunity.score_confidence or 0 }}/100</div>
+            </div>
+        </div>
+
+        <!-- טבלת שדות מחולצים וראיות -->
+        <h3 style="margin-bottom: 12px; font-size: 16px; color: var(--primary);">📋 שדות עובדתיים שחולצו (כולל ציטוט מקור מוכיח)</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 140px;">שדה</th>
+                    <th style="width: 220px;">ערך מחולץ</th>
+                    <th>ציטוט מוכיח מהמקור (Evidence Text)</th>
+                    <th style="width: 100px;">רמת ודאות</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><b>📍 מיקום גיאוגרפי</b></td>
+                    <td>{{ opportunity.location_value or 'לא צוין' }}</td>
+                    <td style="color: #475569; font-style: italic;">{{ opportunity.location_evidence or '-' }}</td>
+                    <td>{{ "{:.0f}%".format((opportunity.location_confidence or 0)*100) }}</td>
+                </tr>
+                <tr>
+                    <td><b>🛠️ מקצוע / סוג עבודה</b></td>
+                    <td>{{ opportunity.work_type_value or 'כללי' }}</td>
+                    <td style="color: #475569; font-style: italic;">{{ opportunity.work_type_evidence or '-' }}</td>
+                    <td>{{ "{:.0f}%".format((opportunity.work_type_confidence or 0)*100) }}</td>
+                </tr>
+                <tr>
+                    <td><b>💰 תקציב משוער</b></td>
+                    <td>
+                        {% if opportunity.budget_value %}
+                            <b>{{ "{:,.0f}".format(opportunity.budget_value) }} ₪</b>
+                        {% else %}
+                            <span style="color: var(--text-muted);">לא צוין (NULL)</span>
+                        {% endif %}
+                    </td>
+                    <td style="color: #475569; font-style: italic;">{{ opportunity.budget_evidence or 'לא צוין בטקסט במפורש' }}</td>
+                    <td>{{ "{:.0f}%".format((opportunity.budget_confidence or 0)*100) if opportunity.budget_value else '-' }}</td>
+                </tr>
+                <tr>
+                    <td><b>📅 מועד אחרון / ביצוע</b></td>
+                    <td>{{ opportunity.deadline_value.strftime('%d/%m/%Y %H:%M') if opportunity.deadline_value else 'גמיש / לא צוין' }}</td>
+                    <td style="color: #475569; font-style: italic;">{{ opportunity.deadline_evidence or '-' }}</td>
+                    <td>{{ "{:.0f}%".format((opportunity.deadline_confidence or 0)*100) }}</td>
+                </tr>
+                <tr>
+                    <td><b>📞 פרטי התקשרות</b></td>
+                    <td>{{ opportunity.contact_value or 'במסמכי המקור' }}</td>
+                    <td style="color: #475569; font-style: italic;">{{ opportunity.contact_evidence or '-' }}</td>
+                    <td>{{ "{:.0f}%".format((opportunity.contact_confidence or 0)*100) }}</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- פעולות קבלן -->
+        <div style="margin-top: 32px; padding: 20px; background: #f8fafc; border-radius: 8px; border: 1px solid var(--border);">
+            <h3 style="margin-bottom: 12px; font-size: 16px;">✍️ עדכון סטטוס טיפול ופעולה אנושית</h3>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <button class="btn btn-outline" hx-post="/api/opportunities/{{ opportunity.id }}/action" hx-vals='{"action_type": "reviewed", "notes": "נבדק ע״י קבלן"}' hx-swap="none" hx-on::after-request="alert('תועד: נבדק');">
+                    👁️ סמן כנבדק
+                </button>
+                <button class="btn btn-primary" hx-post="/api/opportunities/{{ opportunity.id }}/action" hx-vals='{"action_type": "contacted", "notes": "נוצר קשר טלפוני"}' hx-swap="none" hx-on::after-request="alert('תועד: נוצר קשר');">
+                    📞 נוצר קשר
+                </button>
+                <button class="btn btn-success" hx-post="/api/opportunities/{{ opportunity.id }}/action" hx-vals='{"action_type": "submitted", "notes": "הוגשה הצעת מחיר"}' hx-swap="none" hx-on::after-request="alert('תועד: הוגשה הצעה');">
+                    📝 הוגשה הצעה
+                </button>
+                <button class="btn btn-success" style="background:#059669;" hx-post="/api/opportunities/{{ opportunity.id }}/action" hx-vals='{"action_type": "won", "notes": "זכייה בפרויקט!"}' hx-swap="none" hx-on::after-request="alert('מזל טוב! זכייה תועדה');">
+                    🏆 זכייה בפרויקט
+                </button>
+                <button class="btn btn-danger" hx-post="/api/opportunities/{{ opportunity.id }}/dismiss" hx-swap="none" hx-on::after-request="alert('ההזדמנות נדחתה');">
+                    ✕ פסול / דחה
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

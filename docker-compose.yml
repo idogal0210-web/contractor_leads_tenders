@@ -1,0 +1,90 @@
+version: "3.9"
+
+# =============================================================================
+# Contractor Leads & Tenders Management System — Docker Compose
+# =============================================================================
+
+networks:
+  leads_net:
+    driver: bridge
+
+volumes:
+  redis_data:
+
+services:
+
+  # ---------------------------------------------------------------------------
+  # Redis — message broker & Celery result backend
+  # ---------------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: leads_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - leads_net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+  # ---------------------------------------------------------------------------
+  # Web — FastAPI application server
+  # ---------------------------------------------------------------------------
+  web:
+    build: .
+    container_name: leads_web
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - leads_net
+    command: uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload
+
+  # ---------------------------------------------------------------------------
+  # Worker — Celery task worker
+  # ---------------------------------------------------------------------------
+  worker:
+    build: .
+    container_name: leads_worker
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - leads_net
+    command: celery -A core.queue.celery_app worker --loglevel=info
+
+  # ---------------------------------------------------------------------------
+  # Beat — Celery periodic task scheduler
+  # ---------------------------------------------------------------------------
+  beat:
+    build: .
+    container_name: leads_beat
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - leads_net
+    command: celery -A core.queue.celery_app beat --loglevel=info
