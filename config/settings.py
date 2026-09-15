@@ -54,7 +54,7 @@ class Settings(BaseSettings):
     # -------------------------------------------------------------------------
     supabase_url: str = "https://your-project.supabase.co"
     supabase_key: str = ""
-    supabase_db_url: str = "postgresql+psycopg2://postgres:pass@localhost:5432/postgres"
+    supabase_db_url: str = "sqlite:///leads_tenders.db"
 
     # -------------------------------------------------------------------------
     # Redis
