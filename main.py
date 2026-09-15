@@ -197,7 +197,12 @@ def run_pipeline_and_refresh_dashboard(open_browser: bool = False):
 
         # 2. טעינת כל ההזדמנויות
         opps = db.query(Opportunity).all()
-        opps_data = [{c.name: getattr(o, c.name) for c in o.__table__.columns} for o in opps]
+        opps_data = []
+        for o in opps:
+            d = {c.name: getattr(o, c.name) for c in o.__table__.columns}
+            if hasattr(o, "source_item") and o.source_item and o.source_item.url:
+                d["url"] = o.source_item.url
+            opps_data.append(d)
 
         # 3. שמירה כ-JSON מקומי
         json_path = os.path.join(data_dir, "opportunities.json")

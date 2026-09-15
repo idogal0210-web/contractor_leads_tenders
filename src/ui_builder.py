@@ -690,6 +690,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         const deadline = opp.deadline_value ? new Date(opp.deadline_value).toLocaleDateString('he-IL') : 'מיידי';
         const classification = opp.required_classification || (isTender ? 'ג-1 ומעלה' : 'אין דרישת סיווג');
         const publisher = opp.publisher_name || 'מקור פרטי';
+        const sourceUrl = opp.url || opp.source_url || '';
 
         let sourceBadge = 'bg-[#181C24] text-[#8A97AC] border-[#202632]';
         if (publisher.includes('ממשל')) sourceBadge = 'bg-blue-500/10 text-blue-400 border-blue-500/30';
@@ -780,6 +781,19 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                     <span>חיוג (${phone})</span>
                   </a>
                 ` : ''}
+
+                <!-- Source Link Action -->
+                ${sourceUrl ? `
+                  <a href="${sourceUrl}" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 bg-[#181C24] hover:bg-[#202632] text-[#C2CDDC] hover:text-[#FB923C] text-xs font-medium rounded-xl border border-[#202632] flex items-center gap-1.5 transition" title="פתיחת דף המקור בלשונית חדשה">
+                    <svg class="w-3.5 h-3.5 text-[#8A97AC]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                    <span>פתיחת מקור</span>
+                  </a>
+                ` : `
+                  <span class="px-2.5 py-1.5 bg-[#181C24] text-[#8A97AC] text-[11px] font-medium rounded-xl border border-[#202632] flex items-center gap-1 opacity-70 cursor-help" title="התקבל מקליטה ישירה או הודעת WhatsApp">
+                    <svg class="w-3 h-3 text-[#8A97AC]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <span>קליטה ישירה</span>
+                  </span>
+                `}
 
                 <!-- Copy Action -->
                 <button onclick="copyOppDetails('${opp.id}')" class="px-3 py-1.5 bg-[#181C24] hover:bg-[#202632] text-[#C2CDDC] hover:text-white text-xs font-medium rounded-xl border border-[#202632] flex items-center gap-1.5 transition active:scale-95" title="העתק פרטי ליד">
