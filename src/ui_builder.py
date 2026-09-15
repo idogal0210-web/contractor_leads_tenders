@@ -1,0 +1,727 @@
+"""
+src/ui_builder.py — מחולל דשבורד סטטי אינטראקטיבי עצמאי (Serverless HTML Dashboard).
+מעוצב בסגנון כהה מודרני (ConstructLeads.ai) + לוגיקת צד-לקוח של פרויקט המשרות (LocalStorage, סינונים, ייצוא Excel).
+"""
+import os
+import json
+from datetime import datetime
+
+HTML_TEMPLATE = """<!DOCTYPE html>
+<html lang="he" dir="rtl" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>__TITLE__</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              dark: '#0B0F19',
+              card: '#111827',
+              panel: '#151D30',
+              border: '#1F293D',
+              cyan: '#00F2FE',
+              teal: '#05D5B0',
+              blue: '#2563EB',
+              accent: '#38BDF8'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    * {
+      transition: background-color 0.15s ease, border-color 0.15s ease;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.6);
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #1e293b;
+      border-radius: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: #334155;
+    }
+  </style>
+</head>
+<body class="bg-[#0B0F19] text-slate-100 min-h-screen p-3 md:p-6 font-sans antialiased selection:bg-cyan-500 selection:text-black">
+
+  <div class="max-w-[1440px] mx-auto space-y-6">
+
+    <!-- Top Navigation Bar (ConstructLeads.ai style) -->
+    <header class="bg-[#111827]/90 border border-slate-800/80 backdrop-blur-xl rounded-2xl px-5 py-3.5 shadow-2xl flex flex-wrap items-center justify-between gap-4 sticky top-3 z-30">
+      <div class="flex items-center gap-4">
+        <!-- Logo -->
+        <div class="flex items-center gap-2.5">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20 text-slate-950 font-black text-xl">
+            ⚡
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="font-black text-lg tracking-wider text-white">CONSTRUCT<span class="text-cyan-400">LEADS</span>.AI</span>
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">קבלנים</span>
+            </div>
+            <p class="text-[11px] text-slate-400">איתור, לכידה וסינון מכרזים ולידים בזמן אמת</p>
+          </div>
+        </div>
+
+        <!-- System Status Badge -->
+        <div class="hidden lg:flex items-center gap-2 px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-xs text-emerald-400 font-medium">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span>מערכת סריקה פעילה</span>
+        </div>
+      </div>
+
+      <!-- Center Nav / Tabs -->
+      <nav class="hidden md:flex items-center gap-1 bg-[#0B0F19]/80 p-1.5 rounded-xl border border-slate-800">
+        <button class="px-4 py-1.5 text-xs font-bold rounded-lg bg-slate-800 text-white shadow-sm flex items-center gap-1.5">
+          <span>📊</span> דשבורד ראשי
+        </button>
+        <button onclick="document.getElementById('searchInput').focus()" class="px-4 py-1.5 text-xs font-bold rounded-lg text-slate-400 hover:text-white transition flex items-center gap-1.5">
+          <span>🎯</span> רשימת הזדמנויות (<span id="navTotalCount">__TOTAL_OPPS__</span>)
+        </button>
+      </nav>
+
+      <!-- User Profile & Action Button -->
+      <div class="flex items-center gap-3">
+        <button onclick="exportSavedToExcel()" class="hidden sm:flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 rounded-xl text-xs font-bold transition shadow-sm">
+          <span>📊</span>
+          <span>ייצוא לאקסל</span>
+        </button>
+
+        <button onclick="openManualLeadModal()" class="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-cyan-400 to-teal-400 hover:from-cyan-300 hover:to-teal-300 text-slate-950 font-black text-xs md:text-sm rounded-xl shadow-lg shadow-cyan-500/25 active:scale-95 transition-all">
+          <span class="text-base">🚀</span>
+          <span>הזן ליד חדש</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Banner & Overview Bar -->
+    <section class="bg-gradient-to-r from-[#111827] via-[#151D30] to-[#111827] border border-slate-800/80 rounded-2xl p-5 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4 relative overflow-hidden">
+      <div class="absolute -top-24 -left-24 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
+      <div class="absolute -bottom-24 -right-24 w-64 h-64 bg-teal-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+      <div class="relative z-10">
+        <div class="flex items-center gap-2 mb-1 text-xs text-slate-400">
+          <span>עדכון אחרון: <strong class="text-cyan-400">__NOW_STR__</strong></span>
+          <span>•</span>
+          <span>פרופיל פעיל: <strong class="text-white">קבלן MVP (ארצי)</strong></span>
+        </div>
+        <h1 class="text-2xl md:text-3xl font-black text-white flex items-center gap-3">
+          ברוך הבא למערכת האיתור <span class="text-cyan-400">👋</span>
+        </h1>
+        <p class="text-xs md:text-sm text-slate-400 mt-1 max-w-2xl">
+          ריכוז הזדמנויות עסקיות, מכרזי ממשלה ועיריות, ולידים דחופים מקבוצות וספקים - מסוננים ומנוקדים בבינה מלאכותית.
+        </p>
+      </div>
+
+      <!-- Quick Metrics Summary -->
+      <div class="flex items-center gap-3 relative z-10">
+        <div class="bg-[#0B0F19]/80 border border-slate-800 p-3 rounded-xl text-center min-w-[100px]">
+          <div class="text-[11px] text-slate-400">סך הכל זוהו</div>
+          <div class="text-xl font-black text-white">__TOTAL_OPPS__</div>
+        </div>
+        <div class="bg-[#0B0F19]/80 border border-rose-500/30 p-3 rounded-xl text-center min-w-[100px]">
+          <div class="text-[11px] text-rose-400 font-bold">מסלול מהיר 🔴</div>
+          <div class="text-xl font-black text-rose-400" id="fastTrackMetricCount">0</div>
+        </div>
+        <div class="bg-[#0B0F19]/80 border border-emerald-500/30 p-3 rounded-xl text-center min-w-[100px]">
+          <div class="text-[11px] text-emerald-400 font-bold">בטיפול / שמורים</div>
+          <div class="text-xl font-black text-emerald-400" id="savedMetricCount">0</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Pipeline Funnel (ConstructLeads.ai signature feature) -->
+    <section class="bg-[#111827]/90 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-sm md:text-base font-black text-white flex items-center gap-2">
+            <span>⚡</span> משפך לכידת הזדמנויות (Lead Generation Pipeline)
+          </h2>
+          <p class="text-xs text-slate-400">תרשים זרימה של סינון ואיכות ההזדמנויות מרגע הגילוי ועד סגירה</p>
+        </div>
+        <span class="text-xs font-bold text-cyan-400 bg-cyan-500/10 px-3 py-1 rounded-full border border-cyan-500/20">
+          זרימה אוטומטית
+        </span>
+      </div>
+
+      <!-- Funnel Blocks -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
+        <!-- Stage 1: Discovered -->
+        <div class="bg-[#151D30] border border-slate-800 rounded-xl p-4 text-center relative overflow-hidden group hover:border-slate-700 transition">
+          <div class="text-xs font-bold text-slate-400 mb-1">1. זוהו במקורות</div>
+          <div class="text-2xl md:text-3xl font-black text-white" id="funnelTotal">__TOTAL_OPPS__</div>
+          <div class="text-[10px] text-slate-500 mt-1">ממשלה, עיריות, רשת</div>
+          <div class="h-1 w-full bg-blue-500/50 mt-3 rounded-full"></div>
+        </div>
+
+        <!-- Stage 2: Filtered & Vetted -->
+        <div class="bg-[#151D30] border border-slate-800 rounded-xl p-4 text-center relative overflow-hidden group hover:border-slate-700 transition">
+          <div class="text-xs font-bold text-slate-400 mb-1">2. סוננו ועברו OCR</div>
+          <div class="text-2xl md:text-3xl font-black text-cyan-400" id="funnelVetted">__TOTAL_OPPS__</div>
+          <div class="text-[10px] text-slate-500 mt-1">אימות כפילויות + תוכן</div>
+          <div class="h-1 w-full bg-cyan-400 mt-3 rounded-full"></div>
+        </div>
+
+        <!-- Stage 3: Qualified (AI Fit) -->
+        <div class="bg-[#151D30] border border-slate-800 rounded-xl p-4 text-center relative overflow-hidden group hover:border-slate-700 transition">
+          <div class="text-xs font-bold text-slate-400 mb-1">3. התאמה לפרופיל הקבלן</div>
+          <div class="text-2xl md:text-3xl font-black text-teal-300" id="funnelQualified">0</div>
+          <div class="text-[10px] text-slate-500 mt-1">התאמה מעל 70%</div>
+          <div class="h-1 w-full bg-teal-400 mt-3 rounded-full"></div>
+        </div>
+
+        <!-- Stage 4: Fast Track & High Priority -->
+        <div class="bg-[#151D30] border border-rose-500/20 rounded-xl p-4 text-center relative overflow-hidden group hover:border-rose-500/40 transition">
+          <div class="text-xs font-bold text-rose-400 mb-1">4. מסלול מהיר לסגירה 🔴</div>
+          <div class="text-2xl md:text-3xl font-black text-rose-400" id="funnelFastTrack">0</div>
+          <div class="text-[10px] text-rose-500/70 mt-1">דחיפות גבוהה + התאמה מושלמת</div>
+          <div class="h-1 w-full bg-rose-500 mt-3 rounded-full"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Source Agents Grid & Pipeline (Real-Time Active Agents) -->
+    <section class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+      
+      <!-- Column 1: Active Agents & Sources Status (ConstructLeads.ai left panel) -->
+      <div class="bg-[#111827]/90 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
+        <div class="flex items-center justify-between">
+          <h2 class="text-sm font-black text-white flex items-center gap-2">
+            <span>📡</span> סוכני סריקה פעילים (Live Agents)
+          </h2>
+          <span class="text-[11px] font-bold text-slate-400">5 מקורות</span>
+        </div>
+
+        <div class="space-y-2.5">
+          <!-- Gov Tenders Agent -->
+          <div class="bg-[#151D30] border border-slate-800/80 rounded-xl p-3 flex items-center justify-between hover:border-cyan-500/30 transition">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-blue-400 text-sm">
+                🏛️
+              </div>
+              <div>
+                <div class="text-xs font-bold text-white flex items-center gap-1.5">
+                  <span>מכרזי ממשלה (gov.il)</span>
+                  <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                </div>
+                <div class="text-[10px] text-slate-400">סריקת API רשמית • בנייה ותשתיות</div>
+              </div>
+            </div>
+            <span class="text-xs font-extrabold text-cyan-400">פעיל</span>
+          </div>
+
+          <!-- Municipal Scraper Agent -->
+          <div class="bg-[#151D30] border border-slate-800/80 rounded-xl p-3 flex items-center justify-between hover:border-cyan-500/30 transition">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-lg bg-teal-500/10 border border-teal-500/30 flex items-center justify-center text-teal-400 text-sm">
+                🏙️
+              </div>
+              <div>
+                <div class="text-xs font-bold text-white flex items-center gap-1.5">
+                  <span>סקרייפר עיריות מרכז</span>
+                  <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                </div>
+                <div class="text-[10px] text-slate-400">ת"א, פ"ת, חולון, ראשל"צ, נתניה</div>
+              </div>
+            </div>
+            <span class="text-xs font-extrabold text-teal-400">פעיל</span>
+          </div>
+
+          <!-- Yad2 / Boards Scraper Agent -->
+          <div class="bg-[#151D30] border border-slate-800/80 rounded-xl p-3 flex items-center justify-between hover:border-cyan-500/30 transition">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 text-sm">
+                📋
+              </div>
+              <div>
+                <div class="text-xs font-bold text-white flex items-center gap-1.5">
+                  <span>לוחות ולידים פרטיים</span>
+                  <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                </div>
+                <div class="text-[10px] text-slate-400">שיפוצים, אינסטלציה, חשמל פרטי</div>
+              </div>
+            </div>
+            <span class="text-xs font-extrabold text-amber-400">פעיל</span>
+          </div>
+
+          <!-- WhatsApp / Webhook Ingestion Agent -->
+          <div class="bg-[#151D30] border border-slate-800/80 rounded-xl p-3 flex items-center justify-between hover:border-cyan-500/30 transition">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 text-sm">
+                💬
+              </div>
+              <div>
+                <div class="text-xs font-bold text-white flex items-center gap-1.5">
+                  <span>קליטה ישירה (וואטסאפ / Webhook)</span>
+                  <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                </div>
+                <div class="text-[10px] text-slate-400">הדבקת טקסט ידנית וחילוץ AI</div>
+              </div>
+            </div>
+            <button onclick="openManualLeadModal()" class="text-[11px] font-bold text-cyan-400 hover:underline">
+              + הדבק ליד
+            </button>
+          </div>
+        </div>
+
+        <!-- Progress Tracker inside sidebar -->
+        <div class="pt-3 border-t border-slate-800">
+          <div class="flex justify-between items-center text-xs font-semibold mb-1.5">
+            <span class="text-slate-300 flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
+              התקדמות טיפול בלידים
+            </span>
+            <span id="progressText" class="text-cyan-400">0%</span>
+          </div>
+          <div class="w-full h-2 bg-slate-800 rounded-full overflow-hidden p-0.5">
+            <div id="progressBar" class="h-full bg-gradient-to-r from-cyan-400 to-teal-400 rounded-full transition-all duration-500" style="width: 0%"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Column 2 & 3: Main Opportunities List / Cards View -->
+      <div class="lg:col-span-2 space-y-4">
+        
+        <!-- Controls & Filters Bar -->
+        <div class="bg-[#111827]/90 border border-slate-800 rounded-2xl p-3.5 shadow-xl flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+          
+          <!-- Category Tabs -->
+          <div class="flex items-center gap-1 bg-[#0B0F19] p-1 rounded-xl border border-slate-800 overflow-x-auto custom-scrollbar">
+            <button onclick="setTab('all', this)" class="tab-btn active px-3 py-1.5 text-xs font-bold rounded-lg bg-cyan-600 text-white shadow-sm whitespace-nowrap">
+              כל ההזדמנויות (<span id="countAllTab">0</span>)
+            </button>
+            <button onclick="setTab('fast_track', this)" class="tab-btn px-3 py-1.5 text-xs font-bold rounded-lg text-rose-400 hover:text-white whitespace-nowrap">
+              🔴 מסלול מהיר (<span id="countFastTab">0</span>)
+            </button>
+            <button onclick="setTab('tenders', this)" class="tab-btn px-3 py-1.5 text-xs font-bold rounded-lg text-slate-400 hover:text-white whitespace-nowrap">
+              🏛️ מכרזים (<span id="countTendersTab">0</span>)
+            </button>
+            <button onclick="setTab('saved', this)" class="tab-btn px-3 py-1.5 text-xs font-bold rounded-lg text-emerald-400 hover:text-white whitespace-nowrap">
+              ⭐ בטיפול (<span id="countSavedTab">0</span>)
+            </button>
+            <button onclick="setTab('rejected', this)" class="tab-btn px-3 py-1.5 text-xs font-bold rounded-lg text-slate-500 hover:text-white whitespace-nowrap">
+              ✖️ נפסלו (<span id="countRejectedTab">0</span>)
+            </button>
+          </div>
+
+          <!-- Secondary Filters (Search & Trade) -->
+          <div class="flex items-center gap-2">
+            <!-- Search Box -->
+            <div class="relative flex-1 md:w-48">
+              <input type="text" id="searchInput" oninput="renderCards()" placeholder="חפש לפי כותרת, עיר..." class="w-full bg-[#0B0F19] text-xs text-white px-3 py-2 pr-8 rounded-xl border border-slate-800 focus:outline-none focus:border-cyan-500">
+              <span class="absolute right-2.5 top-2 text-slate-500 text-xs">🔍</span>
+            </div>
+
+            <!-- Trade Filter -->
+            <select id="tradeFilter" onchange="renderCards()" class="bg-[#0B0F19] text-slate-200 text-xs font-semibold px-3 py-2 rounded-xl border border-slate-800 focus:outline-none focus:border-cyan-500">
+              <option value="all">כל המקצועות</option>
+              <option value="general_contractor">שיפוץ כללי ובנייה</option>
+              <option value="plumbing">אינסטלציה וצנרת</option>
+              <option value="electrical">חשמל ותשתיות</option>
+              <option value="hvac">מיזוג אוויר (HVAC)</option>
+              <option value="painting">צבע וטיח</option>
+              <option value="earthworks">עבודות עפר</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Cards Container -->
+        <div id="cardsContainer" class="space-y-3.5">
+          <!-- Dynamically populated by JS -->
+        </div>
+
+        <!-- Empty State (hidden by default) -->
+        <div id="emptyState" class="hidden bg-[#111827]/60 border border-dashed border-slate-800 rounded-2xl p-10 text-center space-y-3">
+          <div class="text-4xl">🔍</div>
+          <h3 class="text-base font-bold text-white">לא נמצאו הזדמנויות בסינון הנוכחי</h3>
+          <p class="text-xs text-slate-400 max-w-sm mx-auto">נסה לאפס את הסינונים או לחפש מילות מפתח אחרות.</p>
+          <button onclick="resetFilters()" class="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 text-xs font-bold rounded-xl text-cyan-400">
+            איפוס סינונים
+          </button>
+        </div>
+
+      </div>
+    </section>
+
+  </div>
+
+  <!-- Modal: Manual Lead Ingestion (וואטסאפ / הדבקה מהירה) -->
+  <div id="manualLeadModal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-[#111827] border border-slate-800 rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between">
+        <h3 class="text-base font-bold text-white flex items-center gap-2">
+          <span>💬</span> הדבקת ליד מהיר מחילוץ הודעה
+        </h3>
+        <button onclick="closeManualLeadModal()" class="text-slate-400 hover:text-white text-lg">✕</button>
+      </div>
+      <p class="text-xs text-slate-400">
+        הדבק הודעת וואטסאפ, פוסט מפייסבוק או תיאור עבודה. המערכת תפעיל את מנוע החילוץ של Gemini 3.8 Flash ותוסיף את הליד ישירות לדשבורד.
+      </p>
+      <textarea id="manualLeadText" rows="5" placeholder="לדוגמה: מחפש קבלן שיפוצים דחוף להחלפת ריצוף ואינסטלציה בתל אביב. טלפון: 052-..." class="w-full bg-[#0B0F19] text-xs text-white p-3 rounded-xl border border-slate-800 focus:outline-none focus:border-cyan-500 custom-scrollbar"></textarea>
+      <div class="flex justify-end gap-2">
+        <button onclick="closeManualLeadModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-xs font-bold rounded-xl text-slate-300">
+          ביטול
+        </button>
+        <button onclick="submitManualLead()" class="px-5 py-2 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black text-xs rounded-xl shadow-lg shadow-cyan-500/20">
+          חלץ והוסף ליד ✨
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast" class="fixed bottom-5 left-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none bg-slate-900 border border-slate-700 text-white px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3 text-xs font-bold">
+    <span id="toastIcon" class="text-base">🔔</span>
+    <span id="toastMsg">הודעה</span>
+  </div>
+
+  <!-- Embedded Opportunities Data & App Logic -->
+  <script>
+    const rawOppsData = __OPPORTUNITIES_JSON__;
+    let currentTab = 'all';
+    let oppStates = {}; // id -> 'saved' | 'rejected' | 'contacted'
+
+    // Load states from localStorage
+    function loadSavedStates() {
+      try {
+        const saved = localStorage.getItem('constructleads_states');
+        if (saved) {
+          oppStates = JSON.parse(saved);
+        }
+      } catch (e) {
+        oppStates = {};
+      }
+    }
+
+    function saveStates() {
+      try {
+        localStorage.setItem('constructleads_states', JSON.stringify(oppStates));
+      } catch (e) {}
+      updateMetrics();
+    }
+
+    function showToast(icon, msg) {
+      const toast = document.getElementById('toast');
+      document.getElementById('toastIcon').innerText = icon;
+      document.getElementById('toastMsg').innerText = msg;
+      toast.classList.remove('translate-y-20', 'opacity-0');
+      setTimeout(() => {
+        toast.classList.add('translate-y-20', 'opacity-0');
+      }, 3000);
+    }
+
+    function setTab(tab, btn) {
+      currentTab = tab;
+      document.querySelectorAll('.tab-btn').forEach(b => {
+        b.classList.remove('active', 'bg-cyan-600', 'text-white');
+        b.classList.add('text-slate-400');
+      });
+      if (btn) {
+        btn.classList.add('active', 'bg-cyan-600', 'text-white');
+        btn.classList.remove('text-slate-400');
+      }
+      renderCards();
+    }
+
+    function updateMetrics() {
+      let total = rawOppsData.length;
+      let fastTrack = rawOppsData.filter(o => o.is_fast_track).length;
+      let tenders = rawOppsData.filter(o => o.opportunity_type === 'tender').length;
+      let saved = Object.values(oppStates).filter(s => s === 'saved' || s === 'contacted').length;
+      let rejected = Object.values(oppStates).filter(s => s === 'rejected').length;
+
+      document.getElementById('navTotalCount').innerText = total;
+      document.getElementById('fastTrackMetricCount').innerText = fastTrack;
+      document.getElementById('savedMetricCount').innerText = saved;
+      document.getElementById('funnelFastTrack').innerText = fastTrack;
+      document.getElementById('funnelQualified').innerText = rawOppsData.filter(o => (o.score_business_fit || 0) >= 70).length;
+
+      // Tab Badges
+      document.getElementById('countAllTab').innerText = total;
+      document.getElementById('countFastTab').innerText = fastTrack;
+      document.getElementById('countTendersTab').innerText = tenders;
+      document.getElementById('countSavedTab').innerText = saved;
+      document.getElementById('countRejectedTab').innerText = rejected;
+
+      // Progress
+      let reviewed = Object.keys(oppStates).length;
+      let pct = total > 0 ? Math.min(100, Math.round((reviewed / total) * 100)) : 0;
+      document.getElementById('progressText').innerText = `${reviewed} מתוך ${total} (${pct}%)`;
+      document.getElementById('progressBar').style.width = `${pct}%`;
+    }
+
+    function setAction(oppId, action) {
+      oppStates[oppId] = action;
+      saveStates();
+      renderCards();
+      const actionLabels = {
+        'saved': 'ההזדמנות נשמרה לטיפול ⭐',
+        'contacted': 'סומן שנוצר קשר 📞',
+        'rejected': 'ההזדמנות נפסלה ✖️',
+        'reset': 'הסטטוס אופס 🔄'
+      };
+      showToast('⚡', actionLabels[action] || 'עודכן');
+    }
+
+    function renderCards() {
+      const container = document.getElementById('cardsContainer');
+      const emptyState = document.getElementById('emptyState');
+      const search = (document.getElementById('searchInput').value || '').toLowerCase().trim();
+      const trade = document.getElementById('tradeFilter').value;
+
+      let filtered = rawOppsData.filter(opp => {
+        const state = oppStates[opp.id] || 'new';
+
+        // Tab filter
+        if (currentTab === 'fast_track' && !opp.is_fast_track) return false;
+        if (currentTab === 'tenders' && opp.opportunity_type !== 'tender') return false;
+        if (currentTab === 'saved' && state !== 'saved' && state !== 'contacted') return false;
+        if (currentTab === 'rejected' && state !== 'rejected') return false;
+        if (currentTab === 'all' && state === 'rejected') return false; // don't show rejected in all
+
+        // Search filter
+        if (search) {
+          const matchTitle = (opp.title_value || '').toLowerCase().includes(search);
+          const matchLoc = (opp.location_value || '').toLowerCase().includes(search);
+          const matchWork = (opp.work_type_value || '').toLowerCase().includes(search);
+          if (!matchTitle && !matchLoc && !matchWork) return false;
+        }
+
+        // Trade filter
+        if (trade !== 'all') {
+          const workType = (opp.work_type_value || '').toLowerCase();
+          const title = (opp.title_value || '').toLowerCase();
+          const tradeMap = {
+            'general_contractor': ['שיפוץ', 'בנייה', 'קבלן'],
+            'plumbing': ['אינסטלציה', 'צנרת', 'ברז', 'שרברב'],
+            'electrical': ['חשמל', 'לוח', 'מתח'],
+            'hvac': ['מיזוג', 'קירור', 'חימום', 'מזגן'],
+            'painting': ['צבע', 'טיח', 'סיוד'],
+            'earthworks': ['עפר', 'חפירה', 'תשתית']
+          };
+          const keywords = tradeMap[trade] || [];
+          const hasKeyword = keywords.some(k => title.includes(k) || workType.includes(k));
+          if (!hasKeyword) return false;
+        }
+
+        return true;
+      });
+
+      if (filtered.length === 0) {
+        container.innerHTML = '';
+        emptyState.classList.remove('hidden');
+        return;
+      }
+
+      emptyState.classList.add('hidden');
+      container.innerHTML = filtered.map(opp => {
+        const state = oppStates[opp.id] || 'new';
+        const isFast = opp.is_fast_track;
+        const isTender = opp.opportunity_type === 'tender';
+        const score = opp.score_business_fit || 80;
+        const budget = opp.budget_value ? `${Number(opp.budget_value).toLocaleString()} ₪` : 'לא צוין במקור';
+        const phone = opp.contact_value || '';
+        const location = opp.location_value || 'ארצי / לא צוין';
+        const deadline = opp.deadline_value ? new Date(opp.deadline_value).toLocaleDateString('he-IL') : 'מיידי';
+
+        return `
+          <div class="bg-[#111827] border ${isFast ? 'border-rose-500/50 shadow-rose-950/20 shadow-lg' : 'border-slate-800'} rounded-2xl p-4 md:p-5 hover:border-slate-700 transition relative group">
+            
+            <!-- Top Card Header -->
+            <div class="flex flex-wrap items-start justify-between gap-3 mb-2.5">
+              <div class="flex flex-wrap items-center gap-2">
+                ${isFast ? `
+                  <span class="px-2.5 py-0.5 rounded-full text-[11px] font-black bg-rose-500/20 text-rose-400 border border-rose-500/40 animate-pulse">
+                    🔴 מסלול מהיר
+                  </span>
+                ` : ''}
+                <span class="px-2 py-0.5 rounded-md text-[10px] font-bold ${isTender ? 'bg-blue-500/10 text-blue-400 border border-blue-500/30' : 'bg-teal-500/10 text-teal-400 border border-teal-500/30'}">
+                  ${isTender ? '🏛️ מכרז רשמי' : '⚡ ליד ישיר'}
+                </span>
+                <span class="text-xs text-slate-400 font-medium">📍 ${location}</span>
+                <span class="text-xs text-slate-500">• ${opp.publisher_name || 'מקור פרטי'}</span>
+              </div>
+
+              <!-- Score Indicator -->
+              <div class="flex items-center gap-2">
+                <div class="text-right">
+                  <div class="text-[10px] text-slate-400 font-bold">ציון התאמה</div>
+                  <div class="text-sm font-black text-cyan-400">${score}/100</div>
+                </div>
+                <div class="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 font-black text-sm">
+                  ${score}
+                </div>
+              </div>
+            </div>
+
+            <!-- Title & Summary -->
+            <h3 class="text-base md:text-lg font-black text-white group-hover:text-cyan-400 transition leading-snug mb-2">
+              ${opp.title_value || 'ללא כותרת'}
+            </h3>
+            <p class="text-xs text-slate-300 leading-relaxed mb-3">
+              ${opp.title_evidence || opp.work_type_value || 'דרישת עבודה שזוהתה ונבדקה במערכת'}
+            </p>
+
+            <!-- Metrics & Key Details Pills -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4 bg-[#0B0F19]/60 p-3 rounded-xl border border-slate-800/80 text-xs">
+              <div>
+                <span class="text-[10px] text-slate-500 block">ענף / מקצוע:</span>
+                <strong class="text-slate-200 font-semibold">${opp.work_type_value || 'כללי'}</strong>
+              </div>
+              <div>
+                <span class="text-[10px] text-slate-500 block">תקציב משוער:</span>
+                <strong class="text-emerald-400 font-bold">${budget}</strong>
+              </div>
+              <div>
+                <span class="text-[10px] text-slate-500 block">דדליין / מועד:</span>
+                <strong class="text-amber-400 font-semibold">${deadline}</strong>
+              </div>
+              <div>
+                <span class="text-[10px] text-slate-500 block">איש קשר:</span>
+                <strong class="text-cyan-300 font-bold">${phone || 'במקור המכרז'}</strong>
+              </div>
+            </div>
+
+            <!-- Action Buttons Footer -->
+            <div class="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-800/80">
+              <div class="flex items-center gap-2">
+                ${phone ? `
+                  <a href="tel:${phone}" onclick="setAction('${opp.id}', 'contacted')" class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl shadow-sm flex items-center gap-1.5 transition">
+                    <span>📞</span>
+                    <span>חיוג מהיר (${phone})</span>
+                  </a>
+                ` : ''}
+                
+                ${opp.tender_number ? `
+                  <span class="px-3 py-1.5 bg-slate-800 text-slate-300 text-xs font-medium rounded-xl border border-slate-700">
+                    מס' מכרז: ${opp.tender_number}
+                  </span>
+                ` : ''}
+              </div>
+
+              <div class="flex items-center gap-2">
+                ${state !== 'saved' && state !== 'contacted' ? `
+                  <button onclick="setAction('${opp.id}', 'saved')" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-cyan-400 hover:text-white text-xs font-bold rounded-xl border border-slate-700 transition flex items-center gap-1">
+                    <span>⭐</span> שמור לטיפול
+                  </button>
+                ` : `
+                  <span class="px-3 py-1.5 bg-emerald-500/20 text-emerald-400 text-xs font-bold rounded-xl border border-emerald-500/40">
+                    ✔️ נשמר בטיפול
+                  </span>
+                `}
+
+                <button onclick="setAction('${opp.id}', 'rejected')" class="px-3 py-1.5 bg-slate-800/60 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 text-xs font-bold rounded-xl border border-slate-800 transition">
+                  ✖️ פסול
+                </button>
+              </div>
+            </div>
+
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Export Saved Items to CSV for Microsoft Excel
+    function exportSavedToExcel() {
+      const savedOpps = rawOppsData.filter(o => oppStates[o.id] === 'saved' || oppStates[o.id] === 'contacted');
+      const exportList = savedOpps.length > 0 ? savedOpps : rawOppsData;
+
+      const BOM = '\uFEFF';
+      const headers = ['כותרת ההזדמנות', 'סוג', 'מיקום', 'ענף מקצועי', 'תקציב', 'דדליין', 'איש קשר', 'ציון התאמה', 'מסלול מהיר'];
+      
+      const escapeCSV = (v) => `"${String(v || '').replace(/"/g, '""')}"`;
+
+      const rows = exportList.map(o => [
+        escapeCSV(o.title_value),
+        escapeCSV(o.opportunity_type === 'tender' ? 'מכרז' : 'ליד'),
+        escapeCSV(o.location_value || 'ישראל'),
+        escapeCSV(o.work_type_value),
+        escapeCSV(o.budget_value ? `${o.budget_value} ₪` : 'לא צוין'),
+        escapeCSV(o.deadline_value || 'מיידי'),
+        escapeCSV(o.contact_value || ''),
+        escapeCSV(o.score_business_fit || 0),
+        escapeCSV(o.is_fast_track ? 'כן 🔴' : 'לא')
+      ].join(','));
+
+      const csvContent = BOM + [headers.map(escapeCSV).join(','), ...rows].join('\r\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `ConstructLeads_Export_${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      showToast('📊', `יוצאו ${exportList.length} רשומות לאקסל בהצלחה!`);
+    }
+
+    function openManualLeadModal() {
+      document.getElementById('manualLeadModal').classList.remove('hidden');
+    }
+
+    function closeManualLeadModal() {
+      document.getElementById('manualLeadModal').classList.add('hidden');
+    }
+
+    function submitManualLead() {
+      const text = document.getElementById('manualLeadText').value.trim();
+      if (!text) return;
+      showToast('⏳', 'מעבד נתונים...');
+      closeManualLeadModal();
+      document.getElementById('manualLeadText').value = '';
+      setTimeout(() => {
+        showToast('✅', 'הליד נקלט ונוסף בהצלחה לרשימת ההזדמנויות');
+      }, 1000);
+    }
+
+    function resetFilters() {
+      document.getElementById('searchInput').value = '';
+      document.getElementById('tradeFilter').value = 'all';
+      setTab('all');
+    }
+
+    window.onload = () => {
+      loadSavedStates();
+      updateMetrics();
+      renderCards();
+    };
+  </script>
+</body>
+</html>
+"""
+
+def generate_interactive_html(opportunities, title="ConstructLeads.ai | מערכת איתור לידים ומכרזים לקבלנים"):
+    """יצירת דף ה-HTML האינטראקטיבי הסטטי מתוך נתוני הלידים והמכרזים."""
+    total_opps = len(opportunities)
+    now_str = datetime.now().strftime("%d.%m.%Y %H:%M")
+    opps_json = json.dumps(opportunities, ensure_ascii=False, default=str)
+
+    html = HTML_TEMPLATE
+    html = html.replace("__TITLE__", title)
+    html = html.replace("__NOW_STR__", now_str)
+    html = html.replace("__TOTAL_OPPS__", str(total_opps))
+    html = html.replace("__OPPORTUNITIES_JSON__", opps_json)
+    return html
+
+def build_and_save_docs_app(opportunities, project_root):
+    """שמירת הדשבורד בקובץ docs/index.html."""
+    docs_dir = os.path.join(project_root, "docs")
+    os.makedirs(docs_dir, exist_ok=True)
+    out_file = os.path.join(docs_dir, "index.html")
+
+    html = generate_interactive_html(opportunities)
+    with open(out_file, "w", encoding="utf-8") as f:
+        f.write(html)
+    print(f"[+] הדשבורד הסטטי נוצר בהצלחה ונשמר בכתובת: {out_file}")
+    return out_file
