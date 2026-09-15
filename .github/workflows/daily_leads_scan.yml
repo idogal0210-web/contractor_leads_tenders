@@ -1,0 +1,63 @@
+name: Daily Contractor Leads & Tenders Automation
+
+on:
+  schedule:
+    # 3 daily scans: 06:00, 12:00, 18:00 Israel time (03:00, 09:00, 15:00 UTC)
+    - cron: '0 3,9,15 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: "daily-contractor-leads"
+  cancel-in-progress: false
+
+jobs:
+  scan-and-publish:
+    runs-on: ubuntu-latest
+    name: "Autonomous Lead & Tender Scan"
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install google-genai pydantic pydantic-settings sqlalchemy structlog rich tenacity beautifulsoup4 httpx jinja2
+
+      - name: Run Lead Ingestion & Pipeline
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          SMTP_HOST: smtp.gmail.com
+          SMTP_PORT: 587
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          SMTP_FROM: ${{ secrets.SMTP_FROM }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          python main.py
+
+      - name: Commit and push updated opportunities and interactive docs
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add data/ docs/
+          if ! git diff --staged --quiet; then
+            git commit -m "chore: update live leads, tenders and interactive dashboard [skip ci]"
+            git pull --rebase origin main
+            git push origin main
+          else
+            echo "No new changes to commit or push."
+          fi
