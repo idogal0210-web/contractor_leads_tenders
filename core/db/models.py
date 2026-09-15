@@ -69,6 +69,19 @@ class VerificationStatus(str, enum.Enum):
     NEEDS_HUMAN = "needs_human"
 
 
+class UrlValidationStatus(str, enum.Enum):
+    """סטטוס אימות URL המקור."""
+    VALID = "valid"
+    INVALID = "invalid"
+    REQUIRES_AUTH = "requires_auth"
+
+
+class FreshnessStatus(str, enum.Enum):
+    """סטטוס אקטואליות הליד."""
+    FRESH = "fresh"
+    STALE = "stale"
+
+
 class ProcessingStatus(str, enum.Enum):
     """סטטוס עיבוד פריט מקור."""
     PENDING = "pending"
@@ -470,6 +483,24 @@ class Opportunity(Base):
     verification_status: Mapped[VerificationStatus] = mapped_column(
         String, nullable=False, default=VerificationStatus.UNVERIFIED
     )
+
+    validation_status: Mapped[UrlValidationStatus] = mapped_column(
+        String, nullable=False, default=UrlValidationStatus.VALID
+    )
+    last_validated_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+
+    # תאריך פרסום מקורי של הליד (מחולץ מ-HTML או AI)
+    published_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    # סטטוס אקטואליות — fresh אם פורסם ב-45 הימים האחרונים
+    freshness_status: Mapped[FreshnessStatus] = mapped_column(
+        String, nullable=False, default=FreshnessStatus.FRESH
+    )
+    # תיאור טקסטואלי מדויק של המקור
+    source_label: Mapped[Optional[str]] = mapped_column(String, nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False

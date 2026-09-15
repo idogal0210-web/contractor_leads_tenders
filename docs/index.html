@@ -202,7 +202,7 @@
     <section class="bg-[#12151B] border border-[#202632] rounded-2xl p-5 md:p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
       <div>
         <div class="flex items-center gap-2 text-xs text-[#8A97AC] mb-1 font-mono">
-          <span>תאריך סריקה: <strong class="text-[#F0F4F8]">15.09.2026 14:08</strong></span>
+          <span>תאריך סריקה: <strong class="text-[#F0F4F8]">15.09.2026 16:35</strong></span>
           <span>•</span>
           <span class="text-emerald-400">מסד נתונים מסונכרן</span>
         </div>
@@ -687,11 +687,25 @@
         const classification = opp.required_classification || (isTender ? 'ג-1 ומעלה' : 'אין דרישת סיווג');
         const publisher = opp.publisher_name || 'מקור פרטי';
         const sourceUrl = opp.url || opp.source_url || '';
+        const valStatus = opp.validation_status || 'valid';
 
         let sourceBadge = 'bg-[#181C24] text-[#8A97AC] border-[#202632]';
         if (publisher.includes('ממשל')) sourceBadge = 'bg-blue-500/10 text-blue-400 border-blue-500/30';
         else if (publisher.includes('עיריי')) sourceBadge = 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30';
         else if (publisher.includes('WhatsApp') || publisher.includes('הדבקה')) sourceBadge = 'bg-[#EA580C]/10 text-[#FB923C] border-[#EA580C]/30';
+
+        let validationBadge = '';
+        if (valStatus === 'invalid') {
+          validationBadge = `<span class="px-2.5 py-0.5 rounded text-[11px] font-medium border bg-rose-500/10 text-rose-500 border-rose-500/30" title="הקישור נבדק ונמצא לא פעיל">לא פעיל</span>`;
+        } else if (valStatus === 'requires_auth') {
+          validationBadge = `<span class="px-2.5 py-0.5 rounded text-[11px] font-medium border bg-amber-500/10 text-amber-500 border-amber-500/30" title="נדרש חיבור או הרשמה">דורש כניסה</span>`;
+        }
+
+        const freshnessStatus = opp.freshness_status || 'fresh';
+        let freshnessBadge = '';
+        if (freshnessStatus === 'stale') {
+          freshnessBadge = `<span class="px-2.5 py-0.5 rounded text-[11px] font-medium border bg-slate-500/10 text-slate-400 border-slate-500/30" title="ליד ישן — פורסם לפני יותר מ-45 יום">לא עדכני</span>`;
+        }
 
         return `
           <div class="bg-[#12151B] border ${isFast ? 'border-[#EA580C]/50 shadow-sm' : 'border-[#202632]'} rounded-2xl p-5 hover:border-[#2D3545] transition relative group">
@@ -713,6 +727,9 @@
                 <span class="px-2 py-0.5 rounded text-[10px] font-medium bg-[#181C24] text-[#C2CDDC] border border-[#202632]">
                   ${isTender ? 'מכרז רשמי' : 'ליד ישיר'}
                 </span>
+
+                ${validationBadge}
+                ${freshnessBadge}
 
                 <span class="text-xs text-[#8A97AC]">מיקום: ${location}</span>
               </div>
@@ -779,15 +796,15 @@
                 ` : ''}
 
                 <!-- Source Link Action -->
-                ${sourceUrl ? `
-                  <a href="${sourceUrl}" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 bg-[#181C24] hover:bg-[#202632] text-[#C2CDDC] hover:text-[#FB923C] text-xs font-medium rounded-xl border border-[#202632] flex items-center gap-1.5 transition" title="פתיחת דף המקור בלשונית חדשה">
+                ${sourceUrl && valStatus === 'valid' ? `
+                  <a href="${sourceUrl}" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 bg-[#181C24] hover:bg-[#202632] text-[#C2CDDC] hover:text-[#FB923C] text-xs font-medium rounded-xl border border-[#202632] flex items-center gap-1.5 transition" title="${opp.source_label || 'פתיחת דף המקור'}">
                     <svg class="w-3.5 h-3.5 text-[#8A97AC]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
                     <span>פתיחת מקור</span>
                   </a>
                 ` : `
-                  <span class="px-2.5 py-1.5 bg-[#181C24] text-[#8A97AC] text-[11px] font-medium rounded-xl border border-[#202632] flex items-center gap-1 opacity-70 cursor-help" title="התקבל מקליטה ישירה או הודעת WhatsApp">
-                    <svg class="w-3 h-3 text-[#8A97AC]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                    <span>קליטה ישירה</span>
+                  <span class="px-2.5 py-1.5 bg-[#181C24] text-[#8A97AC] text-[11px] font-medium rounded-xl border border-[#202632] flex items-center gap-1.5 cursor-help" title="${opp.source_label || 'מקור לא ידוע'}">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
+                    <span>${opp.source_label || publisher}</span>
                   </span>
                 `}
 

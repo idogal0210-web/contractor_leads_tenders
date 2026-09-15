@@ -9,11 +9,11 @@ import json
 import uuid
 import asyncio
 import webbrowser
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 from config.settings import settings
 from core.db.session import get_sync_db, init_db
-from core.db.models import Opportunity, Source, SourceItem, ProcessingStatus
+from core.db.models import Opportunity, Source, SourceItem, ProcessingStatus, FreshnessStatus
 from processors.deduplication import compute_content_hash, is_duplicate
 from processors.llm_extractor import extract_opportunity
 from processors.classifier import classify_opportunity
@@ -55,6 +55,43 @@ def process_lead_item(raw_item: dict, db, profile: dict):
     except Exception as exc:
         print(f"[-] AI extraction error: {exc}")
         return None
+
+    # בדיקת אקטואליות AI — אם Gemini קבע שהתוכן לא אקטואלי, דילוג
+    if not extracted.is_current:
+        print(f"[-] ליד נפסל (לא אקטואלי לפי AI): {extracted.title.value or content[:40]}")
+        return None
+
+    # חילוץ תאריך פרסום — מהפיצ'ר או מ-AI
+    published_at_dt = None
+    if raw_item.get("published_at"):
+        try:
+            published_at_dt = datetime.fromisoformat(str(raw_item["published_at"]).replace("Z", "+00:00"))
+        except Exception:
+            pass
+    if not published_at_dt and extracted.estimated_publish_date:
+        try:
+            published_at_dt = datetime.fromisoformat(str(extracted.estimated_publish_date).replace("Z", "+00:00"))
+            if published_at_dt.tzinfo is None:
+                published_at_dt = published_at_dt.replace(tzinfo=timezone.utc)
+        except Exception:
+            pass
+
+    # Freshness Gate — פסילת לידים ישנים מ-45 יום
+    FRESHNESS_DAYS = 45
+    if published_at_dt:
+        if published_at_dt.tzinfo is None:
+            published_at_dt = published_at_dt.replace(tzinfo=timezone.utc)
+        age = datetime.now(timezone.utc) - published_at_dt
+        if age > timedelta(days=FRESHNESS_DAYS):
+            print(f"[-] ליד נפסל (ישן מ-{FRESHNESS_DAYS} יום): {extracted.title.value or content[:40]}")
+            return None
+
+    # בניית source_label
+    source_name = raw_item.get("source_name", "מקור פתוח")
+    source_label = raw_item.get("source_label")
+    if not source_label:
+        date_str = published_at_dt.strftime("%d/%m/%Y") if published_at_dt else datetime.now(timezone.utc).strftime("%d/%m/%Y")
+        source_label = f"{source_name} — {date_str}"
 
     category, _ = classify_opportunity(extracted, content)
     score = score_opportunity(extracted, profile, settings.fast_track_config)
@@ -114,6 +151,9 @@ def process_lead_item(raw_item: dict, db, profile: dict):
         is_fast_track=score.is_fast_track,
         match_status=match_res.status,
         match_reason=match_res.reason,
+        source_label=source_label,
+        published_at=published_at_dt,
+        freshness_status=FreshnessStatus.FRESH,
     )
     db.add(opp)
     db.commit()
@@ -187,6 +227,19 @@ def run_pipeline_and_refresh_dashboard(open_browser: bool = False):
         # 1. סריקת מקורות רשת חיים
         print("[*] סורק מקורות רשת חיים...")
         live_items = fetch_live_web_leads()
+        
+        # סריקת מכרזים حكومיים (Gov RSS)
+        from src.fetchers import fetch_gov_tenders
+        live_items.extend(fetch_gov_tenders())
+        
+        # סריקת דפדפן חכמה (Playwright) — לוחות דרושים ופייסבוק
+        try:
+            from src.playwright_scrapers import fetch_job_boards, fetch_facebook_groups
+            live_items.extend(fetch_job_boards())
+            live_items.extend(fetch_facebook_groups())
+        except ImportError:
+            print("[-] Playwright scrapers not available.")
+
         new_leads_count = 0
         for item in live_items:
             processed = process_lead_item(item, db, profile)
@@ -197,6 +250,14 @@ def run_pipeline_and_refresh_dashboard(open_browser: bool = False):
 
         # 2. טעינת כל ההזדמנויות
         opps = db.query(Opportunity).all()
+        
+        # 3. אימות כתובות URL (Parallel Check)
+        from src.validation import validate_opportunities_batch
+        from core.db.models import UrlValidationStatus
+        print("[*] מאמת כתובות URL של ההזדמנויות...")
+        validate_opportunities_batch(opps)
+        db.commit()
+
         opps_data = []
         for o in opps:
             d = {c.name: getattr(o, c.name) for c in o.__table__.columns}
@@ -204,7 +265,7 @@ def run_pipeline_and_refresh_dashboard(open_browser: bool = False):
                 d["url"] = o.source_item.url
             opps_data.append(d)
 
-        # 3. שמירה כ-JSON מקומי
+        # 4. שמירה כ-JSON מקומי
         json_path = os.path.join(data_dir, "opportunities.json")
         with open(json_path, "w", encoding="utf-8") as f:
             json.dump(opps_data, f, ensure_ascii=False, indent=2, default=str)
