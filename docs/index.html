@@ -66,6 +66,10 @@
       </div>
     </div>
     <div class="flex items-center gap-2">
+      <button onclick="openScanModal()" class="px-2.5 py-1.5 bg-[#181C24] hover:bg-[#202632] border border-[#EA580C]/40 text-[#FB923C] rounded-lg text-xs font-medium flex items-center gap-1.5">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+        <span>סריקה</span>
+      </button>
       <button onclick="openManualLeadModal()" class="px-3 py-1.5 bg-[#EA580C] text-white rounded-lg text-xs font-medium">
         + הזנת ליד
       </button>
@@ -108,7 +112,11 @@
 
       <!-- Action Buttons -->
       <div class="space-y-2">
-        <button onclick="openManualLeadModal()" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-[#EA580C] hover:bg-[#C2410C] text-white font-medium text-xs rounded-xl shadow-sm transition active:scale-[0.98]">
+        <button onclick="openScanModal()" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-[#EA580C] to-[#C2410C] hover:from-[#FB923C] hover:to-[#EA580C] text-white font-bold text-xs rounded-xl shadow-md transition active:scale-[0.98]">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+          <span>הפעל סריקה ידנית</span>
+        </button>
+        <button onclick="openManualLeadModal()" class="w-full flex items-center justify-center gap-2 px-4 py-2 bg-[#181C24] hover:bg-[#202632] text-[#C2CDDC] hover:text-white border border-[#202632] font-medium text-xs rounded-xl transition">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
           <span>הזנת ליד מהיר</span>
         </button>
@@ -194,7 +202,7 @@
     <section class="bg-[#12151B] border border-[#202632] rounded-2xl p-5 md:p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
       <div>
         <div class="flex items-center gap-2 text-xs text-[#8A97AC] mb-1 font-mono">
-          <span>תאריך סריקה: <strong class="text-[#F0F4F8]">15.09.2026 13:06</strong></span>
+          <span>תאריך סריקה: <strong class="text-[#F0F4F8]">15.09.2026 13:23</strong></span>
           <span>•</span>
           <span class="text-emerald-400">מסד נתונים מסונכרן</span>
         </div>
@@ -206,25 +214,30 @@
         </p>
       </div>
 
-      <!-- Header Metrics Badges -->
-      <div class="flex items-center gap-2.5 overflow-x-auto custom-scrollbar pb-1 md:pb-0">
-        <div class="bg-[#181C24] border border-[#202632] px-4 py-3 rounded-xl min-w-[95px] text-center">
+      <!-- Header Actions & Metrics Badges -->
+      <div class="flex flex-wrap items-center gap-2.5">
+        <button onclick="openScanModal()" class="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-[#EA580C] to-[#C2410C] hover:from-[#FB923C] hover:to-[#EA580C] text-white rounded-xl text-xs font-bold shadow-md shadow-orange-950/40 transition active:scale-[0.98] group">
+          <svg class="w-4 h-4 text-white group-hover:rotate-180 transition-transform duration-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+          <span>הפעל סריקה ידנית</span>
+        </button>
+
+        <div class="bg-[#181C24] border border-[#202632] px-3.5 py-2 rounded-xl min-w-[85px] text-center">
           <div class="text-[10px] text-[#8A97AC] font-medium">סך הכל זוהו</div>
-          <div class="text-lg font-mono font-bold text-white">2</div>
+          <div class="text-base font-mono font-bold text-white">2</div>
         </div>
-        <div class="bg-[#181C24] border border-rose-500/30 px-4 py-3 rounded-xl min-w-[95px] text-center">
+        <div class="bg-[#181C24] border border-rose-500/30 px-3.5 py-2 rounded-xl min-w-[85px] text-center">
           <div class="text-[10px] text-rose-400 font-medium flex items-center justify-center gap-1">
             <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
             מסלול מהיר
           </div>
-          <div class="text-lg font-mono font-bold text-rose-400" id="statFastTrack">0</div>
+          <div class="text-base font-mono font-bold text-rose-400" id="statFastTrack">0</div>
         </div>
-        <div class="bg-[#181C24] border border-emerald-500/30 px-4 py-3 rounded-xl min-w-[95px] text-center">
+        <div class="bg-[#181C24] border border-emerald-500/30 px-3.5 py-2 rounded-xl min-w-[85px] text-center">
           <div class="text-[10px] text-emerald-400 font-medium flex items-center justify-center gap-1">
             <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
             בטיפול
           </div>
-          <div class="text-lg font-mono font-bold text-emerald-400" id="statSaved">0</div>
+          <div class="text-base font-mono font-bold text-emerald-400" id="statSaved">0</div>
         </div>
       </div>
     </section>
@@ -335,6 +348,119 @@
     </div>
 
   </main>
+
+  <!-- Modal: Manual Scan Trigger -->
+  <div id="scanModal" class="hidden fixed inset-0 bg-black/85 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-[#12151B] border border-[#202632] rounded-2xl max-w-xl w-full p-6 space-y-5 shadow-2xl relative max-h-[90vh] overflow-y-auto custom-scrollbar">
+      
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between pb-3 border-b border-[#202632]">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-[#EA580C]/20 border border-[#EA580C]/40 flex items-center justify-center text-[#FB923C]">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-white">הפעלת סריקה יזומה</h3>
+            <p class="text-[11px] text-[#8A97AC]">הפעלת סריקת מקורות מידע, ניתוח AI ב-Gemini ושליחת התראות</p>
+          </div>
+        </div>
+        <button onclick="closeScanModal()" class="text-[#8A97AC] hover:text-white text-lg p-1">✕</button>
+      </div>
+
+      <!-- Cloud Actions Status Box -->
+      <div class="bg-[#181C24] border border-[#202632] rounded-xl p-4 space-y-2">
+        <div class="flex items-center justify-between text-xs">
+          <span class="text-[#8A97AC] font-medium">סטטוס סריקת ענן (GitHub Actions):</span>
+          <span id="cloudScanStatus" class="flex items-center gap-1.5 font-mono text-[11px] text-emerald-400">
+            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+            סריקה אחרונה הושלמה בהצלחה
+          </span>
+        </div>
+        <div class="text-[11px] text-[#C2CDDC] flex items-center justify-between font-mono" id="cloudScanDetails">
+          <span>תזמון אוטומטי: 06:00, 12:00, 18:00</span>
+          <a href="https://github.com/idogal0210-web/contractor_leads_tenders/actions" target="_blank" class="text-[#FB923C] hover:underline flex items-center gap-1">
+            <span>לוגים בענן</span>
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+          </a>
+        </div>
+      </div>
+
+      <!-- Option A: Cloud Scan Trigger -->
+      <div class="space-y-3">
+        <div class="text-xs font-bold text-white flex items-center gap-2">
+          <span class="w-5 h-5 rounded-full bg-[#EA580C]/20 text-[#FB923C] text-[10px] flex items-center justify-center font-mono">1</span>
+          <span>שיגור סריקה מיידית בענן (מומלץ)</span>
+        </div>
+        <p class="text-xs text-[#8A97AC] leading-relaxed">
+          הסריקה תרוץ בשרתי הענן של GitHub Actions, תפעיל את מודל Gemini 3.8 Flash לחילוץ עובדתי, תשלח התראות טלגרם/מייל על לידים דחופים, ותעדכן את הדשבורד אוטומטית.
+        </p>
+        <div class="flex flex-wrap gap-2">
+          <a href="https://github.com/idogal0210-web/contractor_leads_tenders/actions/workflows/daily_leads_scan.yml" target="_blank" onclick="trackCloudScanTrigger()" class="flex-1 min-w-[200px] flex items-center justify-center gap-2 px-4 py-2.5 bg-[#EA580C] hover:bg-[#C2410C] text-white font-bold text-xs rounded-xl shadow-md transition active:scale-[0.98]">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+            <span>פתח שיגור ישיר בענן (Run Workflow)</span>
+          </a>
+          <button onclick="checkLiveScanStatus()" class="px-3 py-2.5 bg-[#181C24] hover:bg-[#202632] border border-[#202632] text-[#C2CDDC] text-xs font-medium rounded-xl transition flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5 text-[#FB923C]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+            <span>רענן סטטוס</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Option B: Local Terminal Execution -->
+      <div class="space-y-2.5 pt-2 border-t border-[#202632]">
+        <div class="text-xs font-bold text-white flex items-center gap-2">
+          <span class="w-5 h-5 rounded-full bg-[#202632] text-[#C2CDDC] text-[10px] flex items-center justify-center font-mono">2</span>
+          <span>הרצה ידנית מקומית (טרמינל)</span>
+        </div>
+        <div class="flex items-center justify-between bg-[#0B0D11] border border-[#202632] rounded-xl px-3.5 py-2 text-xs font-mono">
+          <span class="text-emerald-400">python3 main.py</span>
+          <button onclick="copyTerminalCommand()" class="text-xs text-[#FB923C] hover:text-white flex items-center gap-1 py-1 px-2 rounded hover:bg-[#181C24] transition">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+            <span>העתק פקודה</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Scanned Sources Breakdown Preview -->
+      <div class="space-y-2 pt-2 border-t border-[#202632]">
+        <span class="text-[11px] font-bold text-[#8A97AC] block">מקורות הנסרקים בתהליך:</span>
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-1.5 text-[10px] text-[#C2CDDC]">
+          <div class="bg-[#181C24] p-2 rounded-lg border border-[#202632] flex items-center gap-1.5">
+            <span class="w-1.5 h-1.5 rounded-full bg-blue-400"></span>
+            <span>מכרזי ממשלה (gov.il)</span>
+          </div>
+          <div class="bg-[#181C24] p-2 rounded-lg border border-[#202632] flex items-center gap-1.5">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+            <span>6 אתרי עיריות מרכזיות</span>
+          </div>
+          <div class="bg-[#181C24] p-2 rounded-lg border border-[#202632] flex items-center gap-1.5">
+            <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+            <span>פורום שיפוץ ובנייה (תפוז)</span>
+          </div>
+          <div class="bg-[#181C24] p-2 rounded-lg border border-[#202632] flex items-center gap-1.5">
+            <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+            <span>פורום עשה זאת בעצמך</span>
+          </div>
+          <div class="bg-[#181C24] p-2 rounded-lg border border-[#202632] flex items-center gap-1.5">
+            <span class="w-1.5 h-1.5 rounded-full bg-[#EA580C]"></span>
+            <span>קליטת WhatsApp / Webhook</span>
+          </div>
+          <div class="bg-[#181C24] p-2 rounded-lg border border-[#202632] flex items-center gap-1.5">
+            <span class="w-1.5 h-1.5 rounded-full bg-purple-400"></span>
+            <span>סיווג וניקוד Gemini AI</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer Buttons -->
+      <div class="flex justify-end pt-2">
+        <button onclick="closeScanModal()" class="px-4 py-2 bg-[#181C24] hover:bg-[#202632] text-xs font-medium rounded-xl text-[#C2CDDC] transition">
+          סגור
+        </button>
+      </div>
+
+    </div>
+  </div>
 
   <!-- Modal: Manual Lead Ingestion -->
   <div id="manualLeadModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -715,6 +841,58 @@
       link.click();
       document.body.removeChild(link);
       showToast(`יוצאו ${exportList.length} רשומות לקובץ אקסל בהצלחה`);
+    }
+
+
+    function openScanModal() {
+      document.getElementById('scanModal').classList.remove('hidden');
+      checkLiveScanStatus();
+    }
+
+    function closeScanModal() {
+      document.getElementById('scanModal').classList.add('hidden');
+    }
+
+    function copyTerminalCommand() {
+      navigator.clipboard.writeText('python3 main.py');
+      showToast('הפקודה python3 main.py הועתקה ללוח');
+    }
+
+    function trackCloudScanTrigger() {
+      showToast('פותח דף שיגור סריקה ב-GitHub Actions...');
+      setTimeout(() => {
+        closeScanModal();
+      }, 1000);
+    }
+
+    async function checkLiveScanStatus() {
+      const statusEl = document.getElementById('cloudScanStatus');
+      const detailsEl = document.getElementById('cloudScanDetails');
+      if (!statusEl) return;
+      
+      try {
+        statusEl.innerHTML = '<span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span> בודק סטטוס ענן...';
+        const res = await fetch('https://api.github.com/repos/idogal0210-web/contractor_leads_tenders/actions/runs?per_page=1');
+        if (res.ok) {
+          const data = await res.json();
+          const latest = data.workflow_runs && data.workflow_runs[0];
+          if (latest) {
+            const status = latest.status; // queued, in_progress, completed
+            const conclusion = latest.conclusion; // success, failure, etc.
+            const runDate = new Date(latest.created_at).toLocaleString('he-IL');
+            
+            if (status === 'in_progress' || status === 'queued') {
+              statusEl.innerHTML = '<span class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span> סריקה פעילה כעת בענן...';
+            } else if (conclusion === 'success') {
+              statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400"></span> סריקה הושלמה בהצלחה (${runDate})`;
+            } else {
+              statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-blue-400"></span> סריקה הושלמה (${status})`;
+            }
+          }
+        }
+      } catch (err) {
+        statusEl.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-400"></span> מוכן להרצה';
+      }
     }
 
     function openManualLeadModal() {
