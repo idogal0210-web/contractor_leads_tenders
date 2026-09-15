@@ -146,6 +146,29 @@ def process_lead_item(raw_item: dict, db, profile: dict):
         )
         print(f"[!] נשלחה התראת מייל מיידית על ליד במסלול מהיר: {opp.title_value}")
 
+        # שיגור התראת טלגרם מיידית
+        if settings.telegram_bot_token and settings.telegram_chat_id:
+            try:
+                import httpx
+                tg_text = (
+                    f"🔴 <b>מסלול מהיר: זוהה ליד חדש לקבלן!</b>\\n\\n"
+                    f"📌 <b>כותרת:</b> {opp.title_value}\\n"
+                    f"🛠️ <b>ענף:</b> {opp.work_type_value}\\n"
+                    f"📍 <b>מיקום:</b> {opp.location_value}\\n"
+                    f"💰 <b>תקציב:</b> {budget_str}\\n"
+                    f"📞 <b>טלפון/איש קשר:</b> {opp.contact_value or 'בטקסט המקורי'}\\n"
+                    f"📊 <b>ציון התאמה:</b> {opp.score_business_fit}/100\\n\\n"
+                    f"<i>ציטוט מהמקור:</i>\\n\"{opp.title_evidence}\""
+                )
+                httpx.post(
+                    f"https://api.telegram.org/bot{settings.telegram_bot_token}/sendMessage",
+                    json={"chat_id": settings.telegram_chat_id, "text": tg_text, "parse_mode": "HTML"},
+                    timeout=10
+                )
+                print(f"[!] נשלחה התראת טלגרם מיידית: {opp.title_value}")
+            except Exception as tg_err:
+                print(f"[-] Telegram alert error: {tg_err}")
+
     return opp
 
 
