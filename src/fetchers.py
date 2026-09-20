@@ -176,44 +176,51 @@ def fetch_live_web_leads() -> list[dict[str, Any]]:
     return leads
 
 
-def fetch_gov_tenders(rss_url: str = "https://mr.gov.il/he/Tenders/Pages/SearchTenders.aspx") -> list[dict[str, Any]]:
+def fetch_gov_tenders() -> list[dict[str, Any]]:
     """
     סריקת מכרזים ממשלתיים/ציבוריים מתוך פיד RSS או דף מובנה.
-    (פונקציית תשתית שניתן לחבר אליה כל פיד RSS של רשות מקומית או מנהל רכש)
+    (מעבר על 5 מקורות הזהב שאושרו)
     """
-    leads = []
-    print(f"[*] מתחיל סריקת מכרזים ציבוריים מ: {rss_url}")
+    gov_urls = [
+        "https://mr.gov.il/he/Tenders/Pages/SearchTenders.aspx",
+        "https://www.iroads.co.il/מכרזים/",
+        "https://www.mekorot.co.il/tenders",
+        "https://www.jerusalem.muni.il/he/municipality/tenders/",
+        "https://www.tel-aviv.gov.il/Residents/Tenders/Pages/Default.aspx"
+    ]
+    all_leads = []
     
-    try:
-        # לדוגמה נשתמש בבקשת GET, במציאות יש להתאים ל-XML/RSS האמיתי
-        res = requests.get(rss_url, headers=HEADERS, timeout=15)
-        if res.status_code == 200:
-            soup = BeautifulSoup(res.content, "xml") # Parsing as XML for RSS
-            items = soup.find_all("item")
-            
-            # אם אין תגיות item (לא RSS קלאסי), ננסה HTML רגיל של טבלאות מכרזים
-            if not items:
-                soup = BeautifulSoup(res.text, "html.parser")
-                # דוגמה לחילוץ שורות מטבלת מכרזים סטנדרטית
-                rows = soup.find_all("tr", class_=re.compile("tender|row"))
-                for row in rows[:10]:
-                    text = row.get_text(separator=" ", strip=True)
-                    if any(kw in text for kw in ["בינוי", "שיפוץ", "קבלן", "הקמה", "תשתיות"]):
-                        # מציאת הקישור למכרז
-                        link_tag = row.find("a")
-                        url = link_tag["href"] if link_tag and link_tag.has_attr("href") else rss_url
-                        if url.startswith("/"):
-                            url = "https://mr.gov.il" + url
-                            
-                        leads.append({
-                            "content": text,
-                            "title": "מכרז פומבי: " + text[:50],
-                            "source_name": "מנהל הרכש הממשלתי",
-                            "url": url,
-                            "source_label": f"מנהל הרכש הממשלתי — {datetime.now().strftime('%d/%m/%Y')}",
-                            "published_at": datetime.now(timezone.utc).isoformat(),
-                            "discovered_at": datetime.now(timezone.utc).isoformat()
-                        })
+    for rss_url in gov_urls:
+        print(f"[*] מתחיל סריקת מכרזים ציבוריים מ: {rss_url}")
+        try:
+            res = requests.get(rss_url, headers=HEADERS, timeout=15)
+            if res.status_code == 200:
+                soup = BeautifulSoup(res.content, "xml") # Parsing as XML for RSS
+                items = soup.find_all("item")
+                
+                # אם אין תגיות item (לא RSS קלאסי), ננסה HTML רגיל של טבלאות מכרזים
+                if not items:
+                    soup = BeautifulSoup(res.text, "html.parser")
+                    # דוגמה לחילוץ שורות מטבלת מכרזים סטנדרטית
+                    rows = soup.find_all("tr", class_=re.compile("tender|row"))
+                    for row in rows[:10]:
+                        text = row.get_text(separator=" ", strip=True)
+                        if any(kw in text for kw in ["בינוי", "שיפוץ", "קבלן", "הקמה", "תשתיות", "מים", "ביוב"]):
+                            # מציאת הקישור למכרז
+                            link_tag = row.find("a")
+                            url = link_tag["href"] if link_tag and link_tag.has_attr("href") else rss_url
+                            if url.startswith("/"):
+                                url = rss_url.split("/he")[0].split("/Residents")[0] + url
+                                
+                            all_leads.append({
+                                "content": text,
+                                "title": "מכרז פומבי: " + text[:50],
+                                "source_name": "מכרז ממשלתי/עירוני",
+                                "url": url,
+                                "source_label": f"מכרז ממשלתי/עירוני — {datetime.now().strftime('%d/%m/%Y')}",
+                                "published_at": datetime.now(timezone.utc).isoformat(),
+                                "discovered_at": datetime.now(timezone.utc).isoformat()
+                            })
             else:
                 for item in items[:15]:
                     title = item.find("title").text if item.find("title") else ""
@@ -237,7 +244,7 @@ def fetch_gov_tenders(rss_url: str = "https://mr.gov.il/he/Tenders/Pages/SearchT
                             
                         pub_date_str = pub_date.strftime("%d/%m/%Y") if pub_date else datetime.now(timezone.utc).strftime("%d/%m/%Y")
                         
-                        leads.append({
+                        all_leads.append({
                             "content": full_text,
                             "title": title,
                             "source_name": "מכרז ציבורי",
@@ -246,9 +253,9 @@ def fetch_gov_tenders(rss_url: str = "https://mr.gov.il/he/Tenders/Pages/SearchT
                             "published_at": pub_date.isoformat() if pub_date else None,
                             "discovered_at": datetime.now(timezone.utc).isoformat()
                         })
-    except Exception as exc:
-        print(f"[-] שגיאה בסריקת מכרזים: {exc}")
+        except Exception as exc:
+            print(f"[-] שגיאה בסריקת מכרזים ({rss_url}): {exc}")
 
-    print(f"[+] נסרקו בהצלחה {len(leads)} מכרזים ציבוריים חדשים")
-    return leads
+    print(f"[+] נסרקו בהצלחה {len(all_leads)} מכרזים ציבוריים חדשים")
+    return all_leads
 

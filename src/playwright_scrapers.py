@@ -71,30 +71,46 @@ async def _run_playwright_scraper(url: str, selector: str, source_name: str) -> 
 
 def fetch_job_boards() -> list[dict[str, Any]]:
     """סריקת לוחות דרושים ועבודה מקצועיים (קריאה סינכרונית שעוטפת את Playwright)."""
-    # דוגמה לכתובת חיפוש כללית בלוח דרושים (ניתן להחליף ב-URL אמיתי של AllJobs/Drushim/Yad2)
-    job_board_url = "https://www.example.com/jobs/search?q=קבלן+שיפוצים"
-    # הסלקטור משתנה בהתאם לאתר האמיתי, לדוגמה: div.job-card או article.post
+    # רשימת המקורות שאותרו ואושרו על ידי סוכן המחקר (לוחות מקצועיים בישראל):
+    job_board_urls = [
+        "https://www.shiplus.co.il",
+        "https://www.top-renovations.co.il",
+        "https://www.pro.co.il",
+        "https://www.civileng.co.il/jobs",
+        "https://www.drushim.co.il"
+    ]
     selector = "div, article" 
+    all_leads = []
     
-    # הפעלת הלולאה האסינכרונית (שימו לב: מכיוון ש-fetchers נקראים מקוד סינכרוני, נשתמש ב-asyncio.run)
     try:
-        leads = asyncio.run(_run_playwright_scraper(job_board_url, selector, "לוח דרושים (Playwright)"))
-        return leads
+        for url in job_board_urls:
+            leads = asyncio.run(_run_playwright_scraper(url, selector, "לוח מקצועי (Playwright)"))
+            all_leads.extend(leads)
+        return all_leads
     except Exception as e:
         print(f"[-] תקלה בסריקת לוחות דרושים: {e}")
-        return []
+        return all_leads
 
 
 def fetch_facebook_groups() -> list[dict[str, Any]]:
     """סריקת קבוצות פייסבוק פומביות (דורש דפדפן אמיתי כדי לטעון JS)."""
-    # כתובת לקבוצת פייסבוק פומבית (לדוגמה קבוצת "קבלני שיפוצים")
-    fb_group_url = "https://www.facebook.com/groups/example_group"
+    # המקורות שאותרו ואושרו על ידי סוכן המחקר:
+    fb_group_urls = [
+        "https://www.facebook.com/groups/1382003495801781",
+        "https://www.facebook.com/groups/1243893529012869",
+        "https://www.facebook.com/groups/799002118411343",
+        "https://www.facebook.com/groups/1764401033829929",
+        "https://www.facebook.com/groups/2219249384936942"
+    ]
     # פייסבוק משתמשת בסלקטורים מורכבים. "div[role='article']" בדרך כלל לוכד פוסטים
     selector = "div[role='article']"
+    all_leads = []
     
     try:
-        leads = asyncio.run(_run_playwright_scraper(fb_group_url, selector, "קבוצת פייסבוק (Playwright)"))
-        return leads
+        for url in fb_group_urls:
+            leads = asyncio.run(_run_playwright_scraper(url, selector, "קבוצת פייסבוק (Playwright)"))
+            all_leads.extend(leads)
+        return all_leads
     except Exception as e:
         print(f"[-] תקלה בסריקת פייסבוק: {e}")
-        return []
+        return all_leads
