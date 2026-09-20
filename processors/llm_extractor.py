@@ -16,7 +16,7 @@ from core.security.guardrails import wrap_as_untrusted
 
 log = structlog.get_logger(__name__)
 
-MODEL_NAME = "gemini-3.8-flash"
+MODEL_NAME = "gemini-1.5-pro"
 
 
 class ExtractedField(BaseModel):
@@ -28,6 +28,7 @@ class ExtractedField(BaseModel):
 
 class ExtractedOpportunity(BaseModel):
     """מודל הנתונים המחולץ עבור הזדמנות עסקית (ליד או מכרז)."""
+    analysis_and_reasoning: str = Field(description="שלב שרשרת מחשבה (Chain of Thought). נתח כאן את הטקסט, חשוב בקול רם: האם זו מודעה של בעל מקצוע או לקוח שמחפש עבודה? האם זה אינדקס? מהי מידת הדחיפות? חובה למלא שדה זה ראשון.")
     title: ExtractedField = Field(description="כותרת העבודה או המכרז")
     location: ExtractedField = Field(description="עיר/אזור בארץ, או null אם לא צוין")
     budget: ExtractedField = Field(description="תקציב או היקף כספי משוער. חובה null אם לא נכתב במפורש בטקסט!")
@@ -119,6 +120,7 @@ def _fallback_regex_extract(text: str) -> ExtractedOpportunity:
         opp_type = "irrelevant"
 
     return ExtractedOpportunity(
+        analysis_and_reasoning="גיבוי היוריסטי הופעל במקום מודל AI.",
         title=ExtractedField(value=title_val, evidence_text=title_val, confidence=0.75),
         location=ExtractedField(value=loc_val, evidence_text=loc_val, confidence=0.8 if loc_val else 0.0),
         budget=ExtractedField(value=budget_val, evidence_text=budget_evidence, confidence=0.8 if budget_val else 0.0),
