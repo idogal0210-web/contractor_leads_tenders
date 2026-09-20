@@ -104,8 +104,21 @@ def process_lead_item(raw_item: dict, db, profile: dict):
         except Exception:
             deadline_dt = None
 
-    source_rec = db.query(Source).first()
-    source_id = source_rec.id if source_rec else uuid.uuid4()
+    source_label = raw_item.get("source_label") or "מקור פתוח"
+    source_rec = db.query(Source).filter_by(name=source_label).first()
+    if not source_rec:
+        from core.db.models import SourceType, SourceStatus
+        source_rec = Source(
+            id=uuid.uuid4(),
+            name=source_label,
+            source_type=SourceType.SCRAPING,
+            scan_frequency_hours=24,
+            status=SourceStatus.ACTIVE,
+            error_count=0
+        )
+        db.add(source_rec)
+        db.commit()
+    source_id = source_rec.id
 
     source_item = SourceItem(
         id=uuid.uuid4(),
