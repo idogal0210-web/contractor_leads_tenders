@@ -48,6 +48,22 @@ async def _run_playwright_scraper(url: str, selector: str, source_name: str) -> 
                 if not text:
                     continue
                 
+                # ננסה לחלץ קישור ספציפי מתוך הפוסט עצמו (href)
+                post_url = url
+                try:
+                    a_tag = await el.query_selector("a")
+                    if a_tag:
+                        href = await a_tag.get_attribute("href")
+                        if href:
+                            if href.startswith("/"):
+                                from urllib.parse import urlparse
+                                parsed = urlparse(url)
+                                post_url = f"{parsed.scheme}://{parsed.netloc}{href}"
+                            else:
+                                post_url = href
+                except Exception:
+                    pass
+
                 # בדיקת היתכנות לקיום ליד
                 if any(kw in text for kw in KEYWORD_SIGNALS):
                     date_str = datetime.now(timezone.utc).strftime("%d/%m/%Y")
@@ -55,7 +71,7 @@ async def _run_playwright_scraper(url: str, selector: str, source_name: str) -> 
                         "content": text.strip(),
                         "title": "ליד מלוח מקצועי: " + text.strip()[:40] + "...",
                         "source_name": source_name,
-                        "url": url,
+                        "url": post_url,
                         "source_label": f"{source_name} — נסרק ב-{date_str}",
                         "published_at": datetime.now(timezone.utc).isoformat(),
                         "discovered_at": datetime.now(timezone.utc).isoformat()

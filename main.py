@@ -57,8 +57,8 @@ def process_lead_item(raw_item: dict, db, profile: dict):
         return None
 
     # בדיקת אקטואליות AI — אם Gemini קבע שהתוכן לא אקטואלי, דילוג
-    if not extracted.is_current:
-        print(f"[-] ליד נפסל (לא אקטואלי לפי AI): {extracted.title.value or content[:40]}")
+    if not extracted.is_current or extracted.opportunity_type.lower() == "irrelevant":
+        print(f"[-] ליד נפסל (לא אקטואלי או סרק לפי AI): {extracted.title.value or content[:40]}")
         return None
 
     # חילוץ תאריך פרסום — מהפיצ'ר או מ-AI

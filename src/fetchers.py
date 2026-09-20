@@ -21,7 +21,7 @@ KEYWORD_SIGNALS = [
 ]
 
 # סף אקטואליות — לידים ישנים מ-45 יום נפסלים
-FRESHNESS_THRESHOLD_DAYS = 45
+FRESHNESS_THRESHOLD_DAYS = 180
 
 # תבניות תאריך בעברית ובאנגלית
 DATE_PATTERNS = [
