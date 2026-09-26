@@ -9,10 +9,11 @@ log = structlog.get_logger(__name__)
 async def _authenticated_scrape() -> List[Dict[str, Any]]:
     """
     2. סריקת עומק מאומתת (Authenticated DOM Parsing) - ללוחות B2B סגורים
-    מפעילה דפדפן וירטואלי, מבצעת Login (סימולציה), ושואבת נתונים רק מתוך "טבלאות פרויקטים".
+    במקרה הזה: יפעת מכרזים (קטגוריית בינוי) - tenders.co.il
     """
     leads = []
-    log.info("Starting Authenticated DOM Parsing for B2B portal...")
+    url = "https://www.tenders.co.il/Category/20210000/building/cat"
+    log.info(f"Starting DOM Parsing for B2B portal: {url}")
     
     try:
         async with async_playwright() as p:
@@ -22,40 +23,40 @@ async def _authenticated_scrape() -> List[Dict[str, Any]]:
             )
             page = await context.new_page()
             
-            # 1. Login Phase (Conceptual)
-            # await page.goto("https://b2b-portal.co.il/login")
-            # await page.fill("input[name='username']", "user")
-            # await page.fill("input[name='password']", "pass")
-            # await page.click("button[type='submit']")
-            # await page.wait_for_selector(".dashboard-welcome")
+            # Navigate and wait for React to render the tender list
+            await page.goto(url, timeout=60000)
             
-            # 2. Data Extraction Phase (Parsing exact HTML table rows)
-            # await page.goto("https://b2b-portal.co.il/active-projects")
-            # rows = await page.query_selector_all("tr.job-row")
+            # Wait for at least one tender row to appear (using a CSS attribute selector for dynamic React classes)
+            await page.wait_for_selector('div[class*="catRecord__tender_txt_wraper"]', timeout=15000)
             
-            # Mocking the parsed row for architectural completeness
-            mock_table_rows = [
-                {
-                    "title": "פרויקט גמר - חיפוי בניין משרדים",
-                    "company": "אפריקה ישראל מגורים",
-                    "budget": "120,000 שח",
-                    "contact_phone": "054-1234567"
-                }
-            ]
+            # Extract all tender rows
+            rows = await page.query_selector_all('div[class*="catRecord__tender_txt_wraper"]')
             
-            for row in mock_table_rows:
-                content = f"חברה יזמית: {row['company']}\nפרויקט: {row['title']}\nתקציב קבלן: {row['budget']}\nטלפון: {row['contact_phone']}"
+            for row in rows[:20]:  # Limit to top 20 recent
+                # Extract text using inner_text
+                text = await row.inner_text()
+                lines = [line.strip() for line in text.split('\n') if line.strip() and line.strip() != '•']
+                
+                if not lines:
+                    continue
+                    
+                title = lines[0]
+                date_str = lines[1] if len(lines) > 1 else ""
+                
+                content = f"הזדמנות B2B (יפעת מכרזים):\nפרויקט: {title}\nתאריך: {date_str}"
+                
                 leads.append({
                     "content": content,
-                    "title": row["title"],
-                    "source_name": "לוח קבלנים סגור (B2B)",
-                    "url": "https://b2b-portal.co.il/projects/1",
-                    "source_label": "סריקת עומק מאומתת (DOM Parsing)",
+                    "title": title,
+                    "source_name": "יפעת מכרזים - בינוי",
+                    "url": url, # Link to category page since specific tender link is premium/hidden
+                    "source_label": "סריקת עומק (DOM Parsing)",
                     "published_at": datetime.now(timezone.utc).isoformat(),
                     "discovered_at": datetime.now(timezone.utc).isoformat()
                 })
                 
             await browser.close()
+            log.info(f"Pulled {len(leads)} B2B tenders from Yifat.")
             return leads
 
     except Exception as e:
