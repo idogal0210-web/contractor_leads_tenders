@@ -290,7 +290,7 @@ def run_pipeline_and_refresh_dashboard(open_browser: bool = False):
             if hasattr(o, "source_item") and o.source_item:
                 d["raw_content"] = o.source_item.raw_content
                 if o.source_item.url:
-                d["url"] = o.source_item.url
+                    d["url"] = o.source_item.url
             opps_data.append(d)
 
         # 4. שמירה כ-JSON מקומי
