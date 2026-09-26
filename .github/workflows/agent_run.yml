@@ -35,6 +35,7 @@ jobs:
         SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
         SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
         SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
       run: |
         python main.py
 
