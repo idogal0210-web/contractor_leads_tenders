@@ -9,11 +9,14 @@ log = structlog.get_logger(__name__)
 async def _authenticated_scrape() -> List[Dict[str, Any]]:
     """
     2. סריקת עומק מאומתת (Authenticated DOM Parsing) - ללוחות B2B סגורים
-    במקרה הזה: יפעת מכרזים (קטגוריית בינוי) - tenders.co.il
+    במקרה הזה: יפעת מכרזים (קטגוריות בינוי ועבודות עפר) - tenders.co.il
     """
     leads = []
-    url = "https://www.tenders.co.il/Category/20210000/building/cat"
-    log.info(f"Starting DOM Parsing for B2B portal: {url}")
+    
+    urls_to_scrape = [
+        "https://www.tenders.co.il/Category/20210000/building/cat",
+        "https://www.tenders.co.il/Category/20310000/earthworks/staticCat"
+    ]
     
     try:
         async with async_playwright() as p:
@@ -23,40 +26,48 @@ async def _authenticated_scrape() -> List[Dict[str, Any]]:
             )
             page = await context.new_page()
             
-            # Navigate and wait for React to render the tender list
-            await page.goto(url, timeout=60000)
-            
-            # Wait for at least one tender row to appear (using a CSS attribute selector for dynamic React classes)
-            await page.wait_for_selector('div[class*="catRecord__tender_txt_wraper"]', timeout=15000)
-            
-            # Extract all tender rows
-            rows = await page.query_selector_all('div[class*="catRecord__tender_txt_wraper"]')
-            
-            for row in rows[:20]:  # Limit to top 20 recent
-                # Extract text using inner_text
-                text = await row.inner_text()
-                lines = [line.strip() for line in text.split('\n') if line.strip() and line.strip() != '•']
-                
-                if not lines:
-                    continue
+            for url in urls_to_scrape:
+                log.info(f"Starting DOM Parsing for B2B portal: {url}")
+                try:
+                    # Navigate and wait for React to render the tender list
+                    await page.goto(url, timeout=60000)
                     
-                title = lines[0]
-                date_str = lines[1] if len(lines) > 1 else ""
-                
-                content = f"הזדמנות B2B (יפעת מכרזים):\nפרויקט: {title}\nתאריך: {date_str}"
-                
-                leads.append({
-                    "content": content,
-                    "title": title,
-                    "source_name": "יפעת מכרזים - בינוי",
-                    "url": url, # Link to category page since specific tender link is premium/hidden
-                    "source_label": "סריקת עומק (DOM Parsing)",
-                    "published_at": datetime.now(timezone.utc).isoformat(),
-                    "discovered_at": datetime.now(timezone.utc).isoformat()
-                })
+                    # Wait for at least one tender row to appear (using a CSS attribute selector for dynamic React classes)
+                    await page.wait_for_selector('div[class*="catRecord__tender_txt_wraper"]', timeout=15000)
+                    
+                    # Extract all tender rows
+                    rows = await page.query_selector_all('div[class*="catRecord__tender_txt_wraper"]')
+                    
+                    for row in rows[:20]:  # Limit to top 20 recent per category
+                        # Extract text using inner_text
+                        text = await row.inner_text()
+                        lines = [line.strip() for line in text.split('\n') if line.strip() and line.strip() != '•']
+                        
+                        if not lines:
+                            continue
+                            
+                        title = lines[0]
+                        date_str = lines[1] if len(lines) > 1 else ""
+                        
+                        # Determine category name from URL for better logging/display
+                        cat_name = "עבודות עפר" if "earthworks" in url else "בינוי"
+                        content = f"הזדמנות B2B (יפעת מכרזים - {cat_name}):\nפרויקט: {title}\nתאריך: {date_str}"
+                        
+                        leads.append({
+                            "content": content,
+                            "title": title,
+                            "source_name": f"יפעת מכרזים - {cat_name}",
+                            "url": url, # Link to category page since specific tender link is premium/hidden
+                            "source_label": "סריקת עומק (DOM Parsing)",
+                            "published_at": datetime.now(timezone.utc).isoformat(),
+                            "discovered_at": datetime.now(timezone.utc).isoformat()
+                        })
+                except Exception as loop_e:
+                    log.warning(f"Failed to scrape specific B2B URL {url}", error=str(loop_e))
+                    continue # Continue to next URL even if one fails
                 
             await browser.close()
-            log.info(f"Pulled {len(leads)} B2B tenders from Yifat.")
+            log.info(f"Pulled total {len(leads)} B2B tenders from Yifat.")
             return leads
 
     except Exception as e:
