@@ -1,163 +1,141 @@
-# מערכת איתור ולכידת לידים ומכרזים לקבלנים (Contractor Leads & Tenders Engine)
-**ליבת ניהול הזדמנויות עסקיות עבור קבלנים — Antigravity 2.0**
+<div dir="rtl">
+
+# ConstructLeads.ai — מערכת איתור לידים ומכרזים לקבלנים
+
+> מערכת מודיעין עסקי אוטומטית, מבוססת AI, לאיתור ולכידת הזדמנויות עבודה ומכרזים בענף הבנייה והשיפוצים בישראל.  
+> מקורות המידע הם **מקורות אמת בלבד** — ממשלה, פורטלים מוסמכים, ורשתות חברתיות רלוונטיות.
 
 ---
 
-<div dir="rtl" style="text-align: right;">
+## 🏗️ ארכיטקטורת 3 מנועי לידים
 
-## 🎯 מטרת המערכת
-מערכת מודולרית ואוטונומית לאיתור, חילוץ, אימות, סיווג, ניקוד והפצה של הזדמנויות עסקיות לקבלנים.
-המערכת פועלת בשני ערוצים מקבילים בעלי לוגיקה עסקית שונה:
-1. **לידים פרטיים (איתותי ביקוש):** מיקוד בטריות, מהירות תגובה ומסלול מהיר (**Fast-Track**).
-2. **מכרזים ציבוריים:** מיקוד בדיוק, שלמות עובדתית, מעקב גרסאות מסמכים, וניהול אירועי יומן (סיורי קבלנים, שאלות הבהרה, מועדי הגשה).
+### שכבה 1 — מקורות האמת
 
----
+| מנוע | מקור | שיטה | קובץ |
+|------|------|-------|------|
+| **B2G** — מכרזים ממשלתיים | [data.gov.il](https://data.gov.il) — מנהל הרכש | HTTP Direct API (M2M) | `src/fetchers.py` |
+| **B2B** — לוחות פרויקטים | [tenders.co.il](https://tenders.co.il) (יפעת) — בינוי + עבודות עפר | Authenticated DOM Parsing (Playwright) | `src/b2b_authenticated.py` |
+| **B2C** — לידים פרטיים | קבוצות פייסבוק — שיפוצים ובנייה | Apify Cloud Scraper (Polling) | `src/apify_fetcher.py` |
 
-## 🏗️ ארכיטקטורת המערכת וה-Pipeline
+### שכבה 2 — עוקף חומות תשלום
+
+כאשר מכרז נשלף מלוח סגור (יפעת), המערכת מחפשת אוטומטית את עמוד המקור הפתוח (אתר עירייה/מועצה) ומחליפה את הקישור לפני הצגה בדשבורד.
+
+**קובץ:** `src/source_resolver.py`
+
+### שכבה 3 — עיבוד AI (Two-Tier)
 
 ```
-[מקורות מידע: gov.il, עיריות, סקרייפרים, מיילים, Webhooks]
-                           │
-                           ▼
-          [Adapters: איסוף ובידוד שגיאות]
-                           │
-                           ▼
-        [Deduplication: מניעת כפילויות SHA-256]
-                           │
-                           ▼
-            [OCR: pdfplumber + Tesseract]
-                           │
-                           ▼
-      [LLM Extractor: Gemini 3.8 Flash (עובדות בלבד)]
-                           │
-                           ▼
-        [Classifier: 6 קטגוריות לא-בינאריות]
-                           │
-                           ▼
-       [Scorer: 3 מדדים נפרדים + Fast-Track]
-                           │
-                           ▼
-  [Matcher: השוואה לפרופיל קבלן (FIT / NO_FIT / REVIEW)]
-                           │
-                           ▼
-[Rule-Based Dispatcher: החלטת הפצה בקוד ללא LLM]
-                           │
-            ┌──────────────┴──────────────┐
-            ▼                             ▼
-   [Email Alert (SMTP)]        [Telegram Bot Alert]
-            │                             │
-            └──────────────┬──────────────┘
-                           ▼
-       [Dashboard HTMX / Supabase PostgreSQL DB]
+[כל ליד נכנס]
+       │
+       ▼
+[Tier 1 - Bouncer: gemini-1.5-flash]
+  is_valid_lead_intent()  ← זבל? → 🗑️ נזרק
+       │ כוונה אמיתית
+       ▼
+[Tier 2 - Closer: gemini-3.8-pro]
+  extract_opportunity()   ← חילוץ עובדתי מדויק
+       │
+       ▼
+[Classifier + Scorer + Matcher]
+       │
+       ▼
+[Dashboard + Supabase DB]
 ```
 
 ---
 
-## ⚡ תכונות מפתח
+## ⚡ עקרונות ברזל
 
-* **LLM לחילוץ עובדות בלבד:** מופעל באמצעות `gemini-3.8-flash` ו-`google-genai` SDK. חוק ברזל: אם שדה (כמו תקציב) לא נכתב במפורש בטקסט — מוחזר `null` מוחלט ללא ניחושים.
-* **אבטחת קלט לא מהימן (Guardrails):** טקסט חיצוני אינו מורשה להפעיל כלים או לשנות לוגיקת סוכן, ומנוטר נגד Prompt Injection.
-* **הפרדת סמכויות והחלטות הפצה:** ה-LLM אך ורק מחלץ נתונים. ההחלטה האם לשלוח התראה מתבצעת **אך ורק על ידי חוקים דטרמיניסטיים מפורשים בקוד**.
-* **מסלול מהיר (Fast-Track):** התראות דחופות בעלות התאמה גבוהה וטריות עוקפות את חלונות התזמון ונשלחות באופן מיידי.
-* **מעקב גרסאות מסמכים:** מעקב שינויי הבהרות, דחיות ומועדי סיור לפי מזהה יציב (`stable_calendar_event_id`).
-* **דוחות יומיים:** מופקים אוטומטית, נשמרים מקומית בדיסק ב-`reports/output/`, נשלחים בדוא"ל ובטלגרם, ומוצגים בדשבורד.
+1. **אפס ניחושים:** אם שדה (כמו תקציב) לא נכתב במפורש בטקסט — מוחזר `null`. לעולם לא 0, לעולם לא "לא ידוע".
+2. **מקורות אמת בלבד:** אין חיפוש גוגל חופשי, אין מילות מפתח אקראיות. כל ליד מגיע ממקור מוסמך ומאומת.
+3. **ה-LLM אינו מחליט על הפצה:** ההחלטה האם לשלוח התראה נקבעת אך ורק על ידי חוקים דטרמיניסטיים (`notifications/dispatcher.py`).
+4. **Guardrails:** כל טקסט חיצוני עובר `wrap_as_untrusted()` לפני העברה ל-AI.
 
 ---
 
-## 🚀 התקנה והרצה מהירה (Quick Start)
+## 🚀 הרצה מהירה
 
-### 1. דרישות מוקדמות
-* Python 3.12+
-* Docker & Docker Compose
-* מפתח API של Google Gemini (`gemini-3.8-flash`)
-* מסד נתונים Supabase (PostgreSQL)
+### דרישות
+- Python 3.12+
+- חשבון Supabase (PostgreSQL)
+- מפתח Gemini API
+- מפתח Apify API
 
-### 2. הגדרת משתני סביבה
-העתק את קובץ הדוגמה והגדר את המפתחות:
+### הגדרה
 ```bash
 cp .env.example .env
-```
-ערוך את קובץ `.env` והזן את הערכים:
-* `GEMINI_API_KEY`: מפתח ה-API שלך מ-Google AI Studio
-* `SUPABASE_DB_URL`: מחרוזת החיבור ל-PostgreSQL ב-Supabase
-* `REDIS_URL`: כתובת שרת ה-Redis (`redis://localhost:6379/0`)
-* `TELEGRAM_BOT_TOKEN` ו-`TELEGRAM_CHAT_ID`: עבור התראות לטלגרם
-* `SMTP_*`: עבור שליחת מיילים
-
-### 3. הרצה מקומית עם Docker Compose
-המערכת כוללת תצורת Docker מלאה המריצה Redis, שרת FastAPI, Celery Worker ו-Celery Beat:
-```bash
-docker-compose up --build -d
+# ערוך את .env עם המפתחות שלך
+python3 main.py
 ```
 
-### 4. החלת סכמת ה-DB (Alembic)
-```bash
-alembic upgrade head
-```
-
-### 5. גישה לממשק
-פתח את הדפדפן בכתובת:
-* **מסך בדיקה מהירה (Dashboard):** [http://localhost:8000](http://localhost:8000)
-* **תיעוד API אינטראקטיבי (Swagger):** [http://localhost:8000/docs](http://localhost:8000/docs)
+### משתני סביבה חובה
+| משתנה | תיאור |
+|--------|--------|
+| `GEMINI_API_KEY` | מפתח Google AI Studio |
+| `SUPABASE_URL` | כתובת פרויקט Supabase |
+| `SUPABASE_KEY` | מפתח Supabase Anon |
+| `SUPABASE_DB_URL` | מחרוזת PostgreSQL ישירה |
+| `APIFY_API_TOKEN` | מפתח Apify (לסריקת פייסבוק) |
+| `APIFY_FACEBOOK_TASK_ID` | מזהה המשימה ב-Apify (`8dHQotGhHR7FuEnfU`) |
+| `TAVILY_API_KEY` | לאיתור מקורות ציבוריים חלופיים |
 
 ---
 
-## 🧪 הרצת בדיקות (Automated Tests)
-המערכת כוללת חבילת בדיקות יחידה ואינטגרציה מלאה:
-```bash
-pytest -v
-```
+## 🤖 GitHub Actions
+
+הסריקה רצה **אך ורק בהפעלה ידנית** — אין תזמון אוטומטי פעיל.
+
+להפעלה ידנית:  
+`GitHub → Actions → Contractor Leads 24/7 Agent → Run workflow`
 
 ---
 
-## 📁 מבנה הספריות
+## 📁 מבנה הפרויקט
 
 ```
-איתור ולכידת לידים/
-├── .env.example                # תבנית משתני סביבה
-├── docker-compose.yml          # הרצת Redis + FastAPI + Celery
-├── requirements.txt            # ספריות פייתון
-├── alembic.ini                 # הגדרות Alembic
-├── alembic/                    # קבצי מיגרציות למסד הנתונים
-├── config/
-│   ├── settings.py             # הגדרות מערכת (Pydantic BaseSettings)
-│   └── contractor_profile.json # פרופיל קבלן יעד (מקצועות, אזור, מילות מפתח)
+.
+├── main.py                      # נקודת הכניסה הראשית — pipeline מלא
+├── src/
+│   ├── fetchers.py              # B2G: data.gov.il API (M2M)
+│   ├── b2b_authenticated.py     # B2B: Playwright DOM scraper (יפעת)
+│   ├── apify_fetcher.py         # B2C: Apify Facebook polling
+│   ├── source_resolver.py       # עוקף חומות תשלום (Tavily search)
+│   └── ui_builder.py            # מחולל HTML Dashboard
+├── processors/
+│   ├── llm_extractor.py         # Two-Tier AI (Flash + Pro)
+│   ├── classifier.py            # סיווג 6 קטגוריות
+│   ├── scorer.py                # ניקוד: business_fit, urgency, confidence
+│   ├── matcher.py               # השוואה לפרופיל קבלן
+│   └── deduplication.py         # מניעת כפילויות SHA-256
 ├── core/
 │   ├── db/
-│   │   ├── models.py           # 9 מודלים ב-SQLAlchemy 2.x
-│   │   └── session.py          # חיבורי סשן סינכרוניים ואסינכרוניים
-│   ├── queue/
-│   │   ├── celery_app.py       # הגדרת Celery ו-Beat Schedule
-│   │   └── tasks.py            # משימות רקע ו-Pipeline מלא
+│   │   ├── models.py            # 9 מודלי SQLAlchemy
+│   │   └── session.py           # חיבור Supabase
 │   └── security/
-│       └── guardrails.py       # סינון קלט לא מהימן וניטרול הזרקות
-├── adapters/                   # מתאמי מקורות נתונים
-│   ├── base.py                 # ממשק אבסטרקטי ומבנה RawItem/FetchResult
-│   ├── gov_tenders.py          # API מכרזי ממשלה רשמי
-│   ├── data_gov.py             # API מאגרי מידע מוניציפליים
-│   ├── municipal_scraper.py    # סקרייפר Playwright לעיריות
-│   ├── yad2_scraper.py         # סקרייפר לידים פרטיים ולוחות
-│   └── email_ingestion.py      # קליטת לידים מתיבת מייל (IMAP)
-├── processors/                 # מנועי עיבוד וניתוח
-│   ├── deduplication.py        # מניעת כפילויות מבוססת SHA-256
-│   ├── ocr.py                  # חילוץ טקסט חכם (pdfplumber + Tesseract)
-│   ├── llm_extractor.py        # חילוץ עובדות מובנה באמצעות Gemini 3.8 Flash
-│   ├── classifier.py           # סיווג ל-6 קטגוריות
-│   ├── scorer.py               # ניקוד 3-מדדים וזיהוי Fast-Track
-│   └── matcher.py              # התאמה והשוואה לפרופיל הקבלן
-├── notifications/              # מנוע הפצה
-│   ├── dispatcher.py           # מנוע שיגור מבוסס כללים דטרמיניסטיים
-│   ├── email_sender.py         # שליחת דוא"ל דרך SMTP
-│   ├── telegram_sender.py      # שליחת התראות לטלגרם
-│   └── templates/              # תבניות HTML מעוצבות בעברית (RTL)
-├── api/                        # שרת ה-Web וה-API
-│   ├── main.py                 # אפליקציית FastAPI ראשית
-│   ├── routes/                 # נתיבי Webhooks, הזדמנויות ודוחות
-│   └── templates/              # דפי הדשבורד ב-HTML/HTMX (RTL)
-├── reports/
-│   ├── daily_report.py         # הפקה ושמירה מקומית של הדוח היומי
-│   └── output/                 # שמירת עותקי דוחות מקומיים לפי תאריך
-└── tests/                      # בדיקות יחידה ואינטגרציה
+│       └── guardrails.py        # הגנה מפני Prompt Injection
+├── notifications/
+│   ├── dispatcher.py            # Rule-based — ללא LLM
+│   ├── email_sender.py          # SMTP
+│   └── telegram_sender.py      # Telegram Bot API
+├── config/
+│   ├── settings.py              # Pydantic BaseSettings
+│   └── contractor_profile.json  # פרופיל הקבלן (מקצועות, אזורים)
+├── docs/
+│   └── index.html               # Dashboard סטטי (נבנה אוטומטית)
+├── data/
+│   └── opportunities.json       # snapshot עדכני (נבנה אוטומטית)
+└── .github/
+    └── workflows/
+        └── agent_run.yml        # GitHub Actions — הפעלה ידנית בלבד
 ```
+
+---
+
+## 🔒 אבטחה
+
+- **Secrets** מאוחסנים ב-GitHub Secrets בלבד — לא ב-code, לא ב-`.env` המועלה
+- **Prompt Injection** — כל קלט חיצוני עטוף ב-`<untrusted_content>` לפני שליחה ל-Gemini
+- **Token** של Apify ו-GitHub לא מופיעים בשום מקום בקוד
 
 </div>
