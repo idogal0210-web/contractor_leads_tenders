@@ -1,8 +1,6 @@
 name: Contractor Leads 24/7 Agent
 
 on:
-  schedule:
-    - cron: '0 */4 * * *'  # Runs every 4 hours
   workflow_dispatch:       # Allows manual trigger from GitHub UI
 
 permissions:
