@@ -16,7 +16,7 @@ from core.security.guardrails import wrap_as_untrusted
 
 log = structlog.get_logger(__name__)
 
-MODEL_NAME = "gemini-3.1-pro"
+MODEL_NAME = "gemini-3.8-pro"
 TIER1_MODEL = "gemini-1.5-flash"
 
 async def is_valid_lead_intent(text: str) -> bool:

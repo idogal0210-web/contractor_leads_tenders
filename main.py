@@ -248,24 +248,16 @@ def run_pipeline_and_refresh_dashboard(open_browser: bool = False):
         print("[*] סורק מקורות רשת חיים...")
         live_items = fetch_live_web_leads()
         
-        # סריקת מכרזים حكومיים (Gov RSS)
+        # סריקת מכרזים حكومיים (Gov RSS) - אינטגרציה קשיחה (M2M)
         from src.fetchers import fetch_gov_tenders
         live_items.extend(fetch_gov_tenders())
         
-        # חוקר ה-AI (Tavily) למציאת לידים מרחבי הרשת
+        # לוחות B2B סגורים (Authenticated DOM Parsing)
         try:
-            from src.tavily_research import fetch_tavily_leads
-            live_items.extend(fetch_tavily_leads())
+            from src.b2b_authenticated import fetch_b2b_portals
+            live_items.extend(fetch_b2b_portals())
         except ImportError:
-            print("[-] Tavily module not found.")
-        
-        # סריקת דפדפן חכמה (Playwright) — לוחות דרושים ופייסבוק
-        try:
-            from src.playwright_scrapers import fetch_job_boards, fetch_facebook_groups
-            live_items.extend(fetch_job_boards())
-            live_items.extend(fetch_facebook_groups())
-        except ImportError:
-            print("[-] Playwright scrapers not available.")
+            print("[-] B2B authenticated module not found.")
 
         new_leads_count = 0
         for item in live_items:
