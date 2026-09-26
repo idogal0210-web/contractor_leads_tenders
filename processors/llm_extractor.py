@@ -16,7 +16,33 @@ from core.security.guardrails import wrap_as_untrusted
 
 log = structlog.get_logger(__name__)
 
-MODEL_NAME = "gemini-1.5-pro"
+MODEL_NAME = "gemini-3.1-pro"
+TIER1_MODEL = "gemini-1.5-flash"
+
+async def is_valid_lead_intent(text: str) -> bool:
+    """
+    Tier 1 Bouncer (הסלקטור): סינון ראשוני ומהיר.
+    מחזיר True אם הטקסט הוא כנראה פנייה אמיתית לקבלן, False אחרת.
+    """
+    api_key = settings.gemini_api_key
+    if not api_key or api_key.startswith("your_"):
+        return True # Fallback: let it pass to heuristic
+
+    from google import genai
+    from google.genai import types
+    client = genai.Client(api_key=api_key)
+    
+    prompt = f"האם הטקסט הבא הוא בקשה אמיתית לקבלן/הצעת עבודה (ולא פרסומת, כתבה או התייעצות כללית)? ענה רק YES או NO.\n\nטקסט:\n{text[:2000]}"
+    try:
+        response = await client.aio.models.generate_content(
+            model=TIER1_MODEL,
+            contents=prompt,
+            config=types.GenerateContentConfig(temperature=0.0, max_output_tokens=5)
+        )
+        return "YES" in (response.text or "").upper()
+    except Exception as e:
+        log.warning("tier1_intent_classification_failed", error=str(e))
+        return True # Pass through on error
 
 
 class ExtractedField(BaseModel):

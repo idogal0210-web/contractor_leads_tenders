@@ -15,7 +15,7 @@ from config.settings import settings
 from core.db.session import get_sync_db, init_db
 from core.db.models import Opportunity, Source, SourceItem, ProcessingStatus, FreshnessStatus
 from processors.deduplication import compute_content_hash, is_duplicate
-from processors.llm_extractor import extract_opportunity
+from processors.llm_extractor import extract_opportunity, is_valid_lead_intent
 from processors.classifier import classify_opportunity
 from processors.scorer import score_opportunity
 from processors.matcher import match_to_profile
@@ -49,7 +49,13 @@ def process_lead_item(raw_item: dict, db, profile: dict):
     if is_duplicate(content_hash, db):
         return None
 
-    # חילוץ מובנה בעזרת Gemini AI
+    # 1. שכבה ראשונה: סיווג כוונות מהיר (The Bouncer)
+    is_valid = asyncio.run(is_valid_lead_intent(content))
+    if not is_valid:
+        print(f"[-] נפסל בשכבה 1 (Intent Classifier) - לא ליד אמיתי: {content[:40]}...")
+        return None
+
+    # 2. שכבה שנייה: חילוץ מובנה בעזרת Gemini 3.1 Pro
     try:
         extracted = asyncio.run(extract_opportunity(content))
     except Exception as exc:
