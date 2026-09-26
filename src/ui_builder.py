@@ -120,16 +120,6 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       </div>
 
       
-              <!-- Full Description -->
-              ${opp.raw_content ? `
-                <div class="px-5 pb-4">
-                  <div class="p-3 bg-white/[0.02] border border-white/5 rounded-2xl text-xs text-[#8A97AC] leading-relaxed whitespace-pre-wrap max-h-32 overflow-y-auto custom-scrollbar">
-                    ${opp.raw_content.replace(/</g, "&lt;").replace(/>/g, "&gt;")}
-                  </div>
-                </div>
-              ` : ''}
-              
-              <!-- Action Buttons -->
 
       <div class="space-y-2">
         <button onclick="openScanModal()" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-[#EA580C] to-[#C2410C] hover:from-[#FB923C] hover:to-[#EA580C] text-white font-bold text-xs rounded-xl shadow-md transition active:scale-[0.98]">
@@ -397,7 +387,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
           </span>
         </div>
         <div class="text-[11px] text-[#C2CDDC] flex items-center justify-between font-mono" id="cloudScanDetails">
-          <span>תזמון אוטומטי: 06:00, 12:00, 18:00</span>
+          <span>הפעלה ידנית בלבד (אין תזמון פעיל)</span>
           <a href="https://github.com/idogal0210-web/contractor_leads_tenders/actions" target="_blank" class="text-[#FB923C] hover:underline flex items-center gap-1">
             <span>לוגים בענן</span>
             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
@@ -533,12 +523,17 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       updateMetrics();
     }
 
-    function showToast(msg) {
+    let _toastTimer = null;
+    function showToast(msg, type = 'default') {
       const toast = document.getElementById('toast');
+      const dot = document.getElementById('toastDot');
       document.getElementById('toastMsg').innerText = msg;
+      dot.className = 'w-2 h-2 rounded-full ' + (type === 'error' ? 'bg-rose-400' : type === 'success' ? 'bg-emerald-400' : 'bg-[#EA580C]');
       toast.classList.remove('translate-y-20', 'opacity-0');
-      setTimeout(() => {
+      if (_toastTimer) clearTimeout(_toastTimer);
+      _toastTimer = setTimeout(() => {
         toast.classList.add('translate-y-20', 'opacity-0');
+        _toastTimer = null;
       }, 3000);
     }
 
@@ -588,10 +583,14 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       document.getElementById('tabCountRejected').innerText = rejected;
 
       document.getElementById('agentCountAll').innerText = total;
-      document.getElementById('agentCountGov').innerText = rawOppsData.filter(o => (o.publisher_name || '').includes('ממשל') || (o.publisher_name || '').includes('gov')).length;
-      document.getElementById('agentCountMuni').innerText = rawOppsData.filter(o => (o.publisher_name || '').includes('עיריי') || (o.publisher_name || '').includes('מועצה')).length;
-      document.getElementById('agentCountPrivate').innerText = rawOppsData.filter(o => (o.publisher_name || '').includes('פרטי') || (o.publisher_name || '').includes('לוחות')).length;
-      document.getElementById('agentCountDirect').innerText = rawOppsData.filter(o => (o.publisher_name || '').includes('הדבקה') || (o.publisher_name || '').includes('WhatsApp') || (o.publisher_name || '').includes('Webhook')).length;
+      const govFilter = o => (o.source_label || '').includes('M2M') || (o.source_label || '').includes('gov') || (o.publisher_name || '').includes('ממשל');
+      const muniFilter = o => (o.publisher_name || '').includes('עיריי') || (o.publisher_name || '').includes('מועצה');
+      const privateFilter = o => (o.publisher_name || '').includes('יפעת') || (o.source_label || '').includes('DOM') || (o.source_label || '').includes('Apify') || (o.source_label || '').includes('Facebook');
+      const directFilter = o => (o.publisher_name || '').includes('הדבקה') || (o.source_label || '').includes('WhatsApp') || (o.publisher_name || '').includes('Webhook');
+      document.getElementById('agentCountGov').innerText = rawOppsData.filter(govFilter).length;
+      document.getElementById('agentCountMuni').innerText = rawOppsData.filter(muniFilter).length;
+      document.getElementById('agentCountPrivate').innerText = rawOppsData.filter(privateFilter).length;
+      document.getElementById('agentCountDirect').innerText = rawOppsData.filter(directFilter).length;
 
       const reviewed = Object.keys(oppStates).length;
       const pct = total > 0 ? Math.min(100, Math.round((reviewed / total) * 100)) : 0;
@@ -652,10 +651,11 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
         if (currentSourceFilter !== 'all') {
           const pub = (opp.publisher_name || '').toLowerCase();
-          if (currentSourceFilter === 'gov' && !pub.includes('ממשל') && !pub.includes('gov')) return false;
+          const sl = (opp.source_label || '').toLowerCase();
+          if (currentSourceFilter === 'gov' && !pub.includes('ממשל') && !sl.includes('m2m') && !sl.includes('gov')) return false;
           if (currentSourceFilter === 'muni' && !pub.includes('עיריי') && !pub.includes('מועצה')) return false;
-          if (currentSourceFilter === 'private' && !pub.includes('פרטי') && !pub.includes('לוחות')) return false;
-          if (currentSourceFilter === 'webhook' && !pub.includes('הדבקה') && !pub.includes('whatsapp') && !pub.includes('webhook')) return false;
+          if (currentSourceFilter === 'private' && !pub.includes('יפעת') && !sl.includes('dom') && !sl.includes('apify') && !sl.includes('facebook')) return false;
+          if (currentSourceFilter === 'webhook' && !pub.includes('הדבקה') && !sl.includes('whatsapp') && !pub.includes('webhook')) return false;
         }
 
         if (search) {
@@ -695,7 +695,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         const state = oppStates[opp.id] || 'new';
         const isFast = opp.is_fast_track;
         const isTender = opp.opportunity_type === 'tender';
-        const score = opp.score_business_fit || 80;
+        const score = opp.score_business_fit ?? 0;
         const budget = opp.budget_value ? `${Number(opp.budget_value).toLocaleString()} ₪` : 'לא צוין במקור';
         const phone = opp.contact_value || '';
         const location = opp.location_value || 'ארצי / לא צוין';
@@ -705,10 +705,12 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         const sourceUrl = opp.url || opp.source_url || '';
         const valStatus = opp.validation_status || 'valid';
 
+        const sourceLabel = opp.source_label || '';
         let sourceBadge = 'bg-[#181C24] text-[#8A97AC] border-[#202632]';
-        if (publisher.includes('ממשל')) sourceBadge = 'bg-blue-500/10 text-blue-400 border-blue-500/30';
-        else if (publisher.includes('עיריי')) sourceBadge = 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30';
-        else if (publisher.includes('WhatsApp') || publisher.includes('הדבקה')) sourceBadge = 'bg-[#EA580C]/10 text-[#FB923C] border-[#EA580C]/30';
+        if (publisher.includes('ממשל') || sourceLabel.includes('M2M') || sourceLabel.includes('gov')) sourceBadge = 'bg-blue-500/10 text-blue-400 border-blue-500/30';
+        else if (publisher.includes('עיריי') || publisher.includes('מועצה')) sourceBadge = 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30';
+        else if (publisher.includes('WhatsApp') || publisher.includes('הדבקה') || sourceLabel.includes('Apify') || sourceLabel.includes('Facebook')) sourceBadge = 'bg-[#EA580C]/10 text-[#FB923C] border-[#EA580C]/30';
+        else if (publisher.includes('יפעת') || sourceLabel.includes('DOM')) sourceBadge = 'bg-purple-500/10 text-purple-400 border-purple-500/30';
 
         let validationBadge = '';
         if (valStatus === 'invalid') {
@@ -773,6 +775,19 @@ HTML_TEMPLATE = """<!DOCTYPE html>
               "${opp.title_evidence || opp.work_type_evidence || opp.work_type_value || 'דרישת עבודה שזוהתה בטקסט המקורי'}"
             </div>
 
+            <!-- Full Raw Content -->
+            ${opp.raw_content && opp.raw_content.length > 10 ? `
+            <details class="mb-3 group/details">
+              <summary class="cursor-pointer text-[11px] text-[#8A97AC] hover:text-[#C2CDDC] flex items-center gap-1.5 select-none transition">
+                <svg class="w-3 h-3 transition-transform group-open/details:rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                תוכן מלא מהמקור
+              </summary>
+              <div class="mt-2 p-3 bg-white/[0.02] border border-white/[0.06] rounded-xl text-[11px] text-[#8A97AC] leading-relaxed whitespace-pre-wrap max-h-40 overflow-y-auto custom-scrollbar font-mono">
+                ${(opp.raw_content || '').replace(/[<>]/g, c => c === '<' ? '&lt;' : '&gt;')}
+              </div>
+            </details>
+            ` : ''}
+
             <!-- Key Attributes Grid -->
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4 bg-[#181C24] p-3 rounded-xl border border-[#202632] text-xs">
               <div>
@@ -812,7 +827,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                 ` : ''}
 
                 <!-- Source Link Action -->
-                ${sourceUrl && valStatus === 'valid' ? `
+                ${sourceUrl ? `
                   <a href="${sourceUrl}" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 bg-[#181C24] hover:bg-[#202632] text-[#C2CDDC] hover:text-[#FB923C] text-xs font-medium rounded-xl border border-[#202632] flex items-center gap-1.5 transition" title="${opp.source_label || 'פתיחת דף המקור'}">
                     <svg class="w-3.5 h-3.5 text-[#8A97AC]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
                     <span>פתיחת מקור</span>
