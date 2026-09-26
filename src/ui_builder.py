@@ -119,7 +119,18 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         <div class="text-[10px] text-[#8A97AC]">פריסה: ארצית • סיווג: ג-1 / ב-1</div>
       </div>
 
-      <!-- Action Buttons -->
+      
+              <!-- Full Description -->
+              ${opp.raw_content ? `
+                <div class="px-5 pb-4">
+                  <div class="p-3 bg-white/[0.02] border border-white/5 rounded-2xl text-xs text-[#8A97AC] leading-relaxed whitespace-pre-wrap max-h-32 overflow-y-auto custom-scrollbar">
+                    ${opp.raw_content.replace(/</g, "&lt;").replace(/>/g, "&gt;")}
+                  </div>
+                </div>
+              ` : ''}
+              
+              <!-- Action Buttons -->
+
       <div class="space-y-2">
         <button onclick="openScanModal()" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-[#EA580C] to-[#C2410C] hover:from-[#FB923C] hover:to-[#EA580C] text-white font-bold text-xs rounded-xl shadow-md transition active:scale-[0.98]">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>

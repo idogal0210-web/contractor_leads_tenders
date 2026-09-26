@@ -53,11 +53,14 @@ async def _authenticated_scrape() -> List[Dict[str, Any]]:
                         cat_name = "עבודות עפר" if "earthworks" in url else "בינוי"
                         content = f"הזדמנות B2B (יפעת מכרזים - {cat_name}):\nפרויקט: {title}\nתאריך: {date_str}"
                         
+                        from src.source_resolver import resolve_official_tender_url
+                        resolved_url = resolve_official_tender_url(title, url)
+                        
                         leads.append({
                             "content": content,
                             "title": title,
                             "source_name": f"יפעת מכרזים - {cat_name}",
-                            "url": url, # Link to category page since specific tender link is premium/hidden
+                            "url": resolved_url, # Resolved to official site if possible
                             "source_label": "סריקת עומק (DOM Parsing)",
                             "published_at": datetime.now(timezone.utc).isoformat(),
                             "discovered_at": datetime.now(timezone.utc).isoformat()

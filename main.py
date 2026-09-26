@@ -287,7 +287,9 @@ def run_pipeline_and_refresh_dashboard(open_browser: bool = False):
         opps_data = []
         for o in opps:
             d = {c.name: getattr(o, c.name) for c in o.__table__.columns}
-            if hasattr(o, "source_item") and o.source_item and o.source_item.url:
+            if hasattr(o, "source_item") and o.source_item:
+                d["raw_content"] = o.source_item.raw_content
+                if o.source_item.url:
                 d["url"] = o.source_item.url
             opps_data.append(d)
 
