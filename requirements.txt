@@ -80,3 +80,4 @@ pytest-asyncio==0.24.0
 pytest-cov==5.0.0
 tavily-python==0.5.0
 firecrawl-py==1.2.5
+apify-client==1.7.1

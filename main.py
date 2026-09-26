@@ -259,6 +259,13 @@ def run_pipeline_and_refresh_dashboard(open_browser: bool = False):
         except ImportError:
             print("[-] B2B authenticated module not found.")
 
+        # מקור אמת B2C: שאבן פייסבוק מאומת בענן (Apify)
+        try:
+            from src.apify_fetcher import fetch_facebook_leads_from_apify
+            live_items.extend(fetch_facebook_leads_from_apify())
+        except ImportError:
+            print("[-] Apify module not found.")
+
         new_leads_count = 0
         for item in live_items:
             processed = process_lead_item(item, db, profile)

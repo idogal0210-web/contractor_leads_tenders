@@ -34,6 +34,8 @@ jobs:
         SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
         SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
         TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
+        APIFY_API_TOKEN: ${{ secrets.APIFY_API_TOKEN }}
+        APIFY_FACEBOOK_TASK_ID: ${{ secrets.APIFY_FACEBOOK_TASK_ID }}
       run: |
         python main.py
 
