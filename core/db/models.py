@@ -449,7 +449,8 @@ class Opportunity(Base):
     tender_number: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     # שם הגוף המפרסם
     publisher_name: Mapped[Optional[str]] = mapped_column(String, nullable=True)
-
+    # הצעת פנייה אוטומטית (ניסוח הודעה)
+    draft_proposal: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     # ------------------------------------------------------------------
     # ציונים (0–100)
     # ------------------------------------------------------------------

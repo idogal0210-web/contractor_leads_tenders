@@ -88,12 +88,9 @@ async def _run_playwright_scraper(url: str, selector: str, source_name: str) -> 
 def fetch_job_boards() -> list[dict[str, Any]]:
     """סריקת לוחות דרושים ועבודה מקצועיים (קריאה סינכרונית שעוטפת את Playwright)."""
     # רשימת המקורות שאותרו ואושרו על ידי סוכן המחקר (לוחות מקצועיים בישראל):
+    # הוסרו אתרי האינדקס המייצרים רעש.
     job_board_urls = [
-        "https://www.shiplus.co.il",
-        "https://www.top-renovations.co.il",
-        "https://www.pro.co.il",
-        "https://www.civileng.co.il/jobs",
-        "https://www.drushim.co.il"
+        "https://www.civileng.co.il/jobs", # לוח הנדסה אזרחית - משרות אמיתיות
     ]
     selector = "div, article" 
     all_leads = []

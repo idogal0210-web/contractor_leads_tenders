@@ -158,6 +158,7 @@ def process_lead_item(raw_item: dict, db, profile: dict):
         contact_confidence=extracted.contact.confidence or 0.8,
         tender_number=extracted.tender_number,
         publisher_name=raw_item.get("source_name", "מקור פתוח"),
+        draft_proposal=getattr(extracted, "draft_proposal", None),
         score_business_fit=score.business_fit,
         score_urgency=score.urgency,
         score_confidence=score.confidence,
@@ -244,6 +245,13 @@ def run_pipeline_and_refresh_dashboard(open_browser: bool = False):
         # סריקת מכרזים حكومיים (Gov RSS)
         from src.fetchers import fetch_gov_tenders
         live_items.extend(fetch_gov_tenders())
+        
+        # חוקר ה-AI (Tavily) למציאת לידים מרחבי הרשת
+        try:
+            from src.tavily_research import fetch_tavily_leads
+            live_items.extend(fetch_tavily_leads())
+        except ImportError:
+            print("[-] Tavily module not found.")
         
         # סריקת דפדפן חכמה (Playwright) — לוחות דרושים ופייסבוק
         try:

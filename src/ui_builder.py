@@ -617,7 +617,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       let phone = phoneClean;
       if (phone.startsWith('0')) phone = '972' + phone.slice(1);
       
-      const message = encodeURIComponent(`שלום, אני פונה בנוגע לעבודה: "${opp.title_value || ''}" שפורסמה ב-${opp.location_value || 'אזור המרכז'}. אשמח לפרטים נוספים.`);
+      const draft = opp.draft_proposal || `שלום, אני פונה בנוגע לעבודה: "${opp.title_value || ''}" שפורסמה ב-${opp.location_value || 'אזור המרכז'}. אשמח לפרטים נוספים.`;
+      const message = encodeURIComponent(draft);
       const url = phone ? `https://wa.me/${phone}?text=${message}` : `https://wa.me/?text=${message}`;
       window.open(url, '_blank');
       setAction(oppId, 'contacted');
