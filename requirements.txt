@@ -13,7 +13,7 @@ pydantic-settings==2.5.2
 # -----------------------------------------------------------------------------
 # Database — ORM, migrations, drivers
 # -----------------------------------------------------------------------------
-sqlalchemy==2.0.35
+sqlalchemy[asyncio]==2.0.35
 alembic==1.13.3
 # psycopg2-binary==2.9.9
 # supabase==2.9.0
