@@ -87,7 +87,7 @@ python3 main.py
 הסריקה רצה **אך ורק בהפעלה ידנית** — אין תזמון אוטומטי פעיל.
 
 להפעלה ידנית:  
-`GitHub → Actions → Contractor Leads 24/7 Agent → Run workflow`
+`GitHub → Actions → Daily Contractor Leads & Tenders Automation → Run workflow`
 
 ---
 
@@ -97,37 +97,40 @@ python3 main.py
 .
 ├── main.py                      # נקודת הכניסה הראשית — pipeline מלא
 ├── src/
-│   ├── fetchers.py              # B2G: data.gov.il API (M2M)
-│   ├── b2b_authenticated.py     # B2B: Playwright DOM scraper (יפעת)
-│   ├── apify_fetcher.py         # B2C: Apify Facebook polling
-│   ├── source_resolver.py       # עוקף חומות תשלום (Tavily search)
-│   └── ui_builder.py            # מחולל HTML Dashboard
+│   ├── fetchers.py              # B2G: משרד הביטחון/ממשלה
+│   ├── municipal_fetcher.py     # מוניציפלי: Playwright (5 עיריות)
+│   ├── apify_fetcher.py         # B2C: פייסבוק דרך Apify
+│   ├── source_resolver.py       # מנוע חיפוש (Tavily)
+│   └── ui_builder.py            # מחולל ה-HTML שעכשיו מחובר ישירות לענן (Supabase JS)
+├── agents/
+│   └── optimizer.py             # סוכן הלמידה שמנתח לידים שנפסלו
 ├── processors/
-│   ├── llm_extractor.py         # Two-Tier AI (Flash + Pro)
-│   ├── classifier.py            # סיווג 6 קטגוריות
-│   ├── scorer.py                # ניקוד: business_fit, urgency, confidence
-│   ├── matcher.py               # השוואה לפרופיל קבלן
-│   └── deduplication.py         # מניעת כפילויות SHA-256
+│   ├── llm_extractor.py         # חילוץ נתונים מובנה עם Gemini
+│   ├── classifier.py            
+│   ├── scorer.py                
+│   ├── matcher.py               # השוואה לפרופיל (כולל סינון פגי תוקף)
+│   └── deduplication.py         
 ├── core/
 │   ├── db/
-│   │   ├── models.py            # 9 מודלי SQLAlchemy
-│   │   └── session.py           # חיבור Supabase
+│   │   ├── models.py            
+│   │   └── session.py           
 │   └── security/
-│       └── guardrails.py        # הגנה מפני Prompt Injection
+│       └── guardrails.py        
 ├── notifications/
-│   ├── dispatcher.py            # Rule-based — ללא LLM
-│   ├── email_sender.py          # SMTP
-│   └── telegram_sender.py      # Telegram Bot API
+│   ├── dispatcher.py            
+│   ├── email_sender.py          
+│   └── telegram_sender.py       
 ├── config/
-│   ├── settings.py              # Pydantic BaseSettings
-│   └── contractor_profile.json  # פרופיל הקבלן (מקצועות, אזורים)
+│   ├── settings.py              
+│   ├── contractor_profile.json  # העדפות הקבלן
+│   └── lead_filtering_skill.yaml# חוקי ה-AI (Trainable Skill)
 ├── docs/
-│   └── index.html               # Dashboard סטטי (נבנה אוטומטית)
+│   └── index.html               # הדשבורד באוויר
 ├── data/
-│   └── opportunities.json       # snapshot עדכני (נבנה אוטומטית)
+│   └── opportunities.json       # מאגר הלידים הסטטי
 └── .github/
     └── workflows/
-        └── agent_run.yml        # GitHub Actions — הפעלה ידנית בלבד
+        └── daily_leads_scan.yml # תהליך ההרצה בענן (כרגע ללא Cron, מופעל ידנית)
 ```
 
 ---
