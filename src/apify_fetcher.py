@@ -23,9 +23,9 @@ def fetch_facebook_leads_from_apify() -> List[Dict[str, Any]]:
     # הגדרת הקלט לאקטור. נניח כתובות של קבוצות פייסבוק בתחום:
     run_input = {
         "startUrls": [
-            {"url": "https://www.facebook.com/groups/shipuzim.il/"},      # שיפוצים
-            {"url": "https://www.facebook.com/groups/kablanim/"},         # קבלני שיפוצים
-            {"url": "https://www.facebook.com/groups/bonim.meshapzim/"}   # בונים ומשפצים
+            {"url": "https://www.facebook.com/groups/Ask.shipuznik/"},      # תשאל שיפוצניק
+            {"url": "https://www.facebook.com/groups/1012921078732649/"},   # קבלנים רשומים וממליצים
+            {"url": "https://www.facebook.com/groups/439773216503926/"}     # עבודות שיפוצים הוגנים
         ],
         "resultsLimit": 15,
         "maxPosts": 15,
