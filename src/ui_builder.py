@@ -14,6 +14,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>__TITLE__</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     tailwind.config = {
       darkMode: 'class',
@@ -502,31 +503,37 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
   <!-- Client-Side App Logic -->
   <script>
-    let rawOppsData = [];
+    const supabaseUrl = '__SUPABASE_URL__';
+    const supabaseKey = '__SUPABASE_KEY__';
+    const supabaseClient = (supabaseUrl && supabaseKey && supabaseUrl !== 'undefined') ? supabase.createClient(supabaseUrl, supabaseKey) : null;
+
+    let rawOppsData = __OPPORTUNITIES_JSON__;
     let currentTab = 'all';
     let currentSourceFilter = 'all';
-    let oppStates = {}; // Local memory only now
+    let oppStates = {}; 
 
-    document.addEventListener("DOMContentLoaded", () => {
-      fetchLeads();
-    });
-
-    async function fetchLeads() {
-      try {
-        const response = await fetch('http://127.0.0.1:8000/api/leads');
-        const data = await response.json();
-        rawOppsData = data;
-        // Rebuild oppStates based on match_status or default
-        rawOppsData.forEach(opp => {
-          if (opp.match_status === 'no_fit') oppStates[opp.id] = 'rejected';
-        });
-        renderCards();
-        updateMetrics();
-      } catch (err) {
-        showToast('שגיאה בטעינת נתונים מהשרת', 'error');
-        console.error(err);
+    document.addEventListener("DOMContentLoaded", async () => {
+      // Rebuild initial states
+      rawOppsData.forEach(opp => {
+        if (opp.match_status === 'no_fit') oppStates[opp.id] = 'rejected';
+      });
+      
+      // Pull latest actions from cloud
+      if (supabaseClient) {
+        try {
+           const { data, error } = await supabaseClient.from('opportunity_actions').select('opportunity_id, action_type');
+           if (!error && data) {
+               data.forEach(row => {
+                   // Only overriding if action is newer, but here we just blindly override for simplicity
+                   oppStates[row.opportunity_id] = row.action_type;
+               });
+           }
+        } catch (e) { console.error('Supabase fetch error', e); }
       }
-    }
+      
+      renderCards();
+      updateMetrics();
+    });
 
     function saveStates() {
       updateMetrics();
@@ -610,31 +617,31 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     }
 
     async function setAction(oppId, action) {
-      try {
-        const payload = { action_type: action };
-        const res = await fetch(`http://127.0.0.1:8000/api/leads/${oppId}/action`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-        if (!res.ok) throw new Error('API Error');
-        
-        // Update UI dynamically upon successful API response
-        oppStates[oppId] = action;
-        saveStates();
-        renderCards();
+      // Update UI immediately (optimistic update)
+      oppStates[oppId] = action;
+      saveStates();
+      renderCards();
 
-        const labels = {
-          'saved': 'ההזדמנות נשמרה בטיפול',
-          'contacted': 'סומן שנוצר קשר',
-          'rejected': 'ההזדמנות נפסלה',
-          'permanently_deleted': 'ההזדמנות הוסרה לצמיתות',
-          'viewed': 'פתיחת מקור התבצעה'
-        };
-        showToast(labels[action] || 'עודכן');
-      } catch (err) {
-        console.error('Failed to save action to API', err);
-        showToast('שגיאה בשמירת הפעולה', 'error');
+      const labels = {
+        'saved': 'ההזדמנות נשמרה בטיפול',
+        'contacted': 'סומן שנוצר קשר',
+        'rejected': 'ההזדמנות נפסלה',
+        'permanently_deleted': 'ההזדמנות הוסרה לצמיתות',
+        'viewed': 'פתיחת מקור התבצעה'
+      };
+      showToast(labels[action] || 'עודכן');
+
+      // Sync to cloud
+      if (supabaseClient) {
+        try {
+          await supabaseClient.from('opportunity_actions').insert([{
+            opportunity_id: oppId,
+            action_type: action,
+            acted_at: new Date().toISOString()
+          }]);
+        } catch(e) {
+          console.error('Failed to sync to cloud', e);
+        }
       }
     }
 
@@ -1054,6 +1061,10 @@ def generate_interactive_html(opportunities, title="ConstructLeads.ai | מערכ
     html = html.replace("__NOW_STR__", now_str)
     html = html.replace("__TOTAL_OPPS__", str(total_opps))
     html = html.replace("__OPPORTUNITIES_JSON__", opps_json)
+    supabase_url = os.environ.get("SUPABASE_URL", "")
+    supabase_key = os.environ.get("SUPABASE_KEY", "")
+    html = html.replace("__SUPABASE_URL__", supabase_url)
+    html = html.replace("__SUPABASE_KEY__", supabase_key)
     return html
 
 def build_and_save_docs_app(opportunities, project_root):
