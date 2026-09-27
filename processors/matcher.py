@@ -79,6 +79,24 @@ def match_to_profile(
         except (ValueError, TypeError):
             pass
 
+    # 4.5. בדיקת האם פג תוקף המכרז / הזדמנות
+    if extracted.deadline.value:
+        try:
+            from datetime import datetime, timezone
+            # parse ISO format deadline
+            dt_str = str(extracted.deadline.value).replace("Z", "+00:00")
+            # handle cases where only date is provided
+            if len(dt_str) == 10:
+                dt_str += "T23:59:59+00:00"
+            deadline_date = datetime.fromisoformat(dt_str)
+            if deadline_date < datetime.now(timezone.utc):
+                return MatchResult(
+                    status=MatchStatus.NO_FIT,
+                    reason=f"תאריך ההגשה / תוקף ההזדמנות עבר ({deadline_date.strftime('%Y-%m-%d')})"
+                )
+        except Exception:
+            pass
+
     # 5. בדיקת התאמה עסקית
     if score.business_fit >= 60 and not missing:
         return MatchResult(
