@@ -12,12 +12,16 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <title>__TITLE__</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     tailwind.config = {
       darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Assistant', 'sans-serif'] },
       theme: {
         extend: {
           colors: {
@@ -634,11 +638,15 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       // Sync to cloud
       if (supabaseClient) {
         try {
-          await supabaseClient.from('opportunity_actions').insert([{
+          const { error } = await supabaseClient.from('opportunity_actions').insert([{
             opportunity_id: oppId,
             action_type: action,
             acted_at: new Date().toISOString()
           }]);
+          if (error) {
+             console.error('Supabase RLS/Insert Error:', error);
+             showToast('שגיאה בסנכרון לענן (RLS)', 'error');
+          }
         } catch(e) {
           console.error('Failed to sync to cloud', e);
         }
@@ -985,7 +993,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       
       try {
         statusEl.innerHTML = '<span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span> בודק סטטוס ענן...';
-        const res = await fetch('https://api.github.com/repos/idogal0210-web/contractor_leads_tenders/actions/runs?per_page=1');
+        const res = await fetch('https://api.github.com/repos/idogal0210-web/contractor_leads_tenders/actions/workflows/daily_leads_scan.yml/runs?per_page=1');
         if (res.ok) {
           const data = await res.json();
           const latest = data.workflow_runs && data.workflow_runs[0];

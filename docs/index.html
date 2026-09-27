@@ -3,12 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <title>ConstructLeads.ai | מערכת מודיעין ואיתור מכרזים לקבלנים</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     tailwind.config = {
       darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Assistant', 'sans-serif'] },
       theme: {
         extend: {
           colors: {
@@ -204,7 +208,7 @@
     <section class="bg-[#12151B] border border-[#202632] rounded-2xl p-5 md:p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
       <div>
         <div class="flex items-center gap-2 text-xs text-[#8A97AC] mb-1 font-mono">
-          <span>תאריך סריקה: <strong class="text-[#F0F4F8]">27.09.2026 22:48</strong></span>
+          <span>תאריך סריקה: <strong class="text-[#F0F4F8]">27.09.2026 23:26</strong></span>
           <span>•</span>
           <span class="text-emerald-400">מסד נתונים מסונכרן</span>
         </div>
@@ -625,11 +629,15 @@
       // Sync to cloud
       if (supabaseClient) {
         try {
-          await supabaseClient.from('opportunity_actions').insert([{
+          const { error } = await supabaseClient.from('opportunity_actions').insert([{
             opportunity_id: oppId,
             action_type: action,
             acted_at: new Date().toISOString()
           }]);
+          if (error) {
+             console.error('Supabase RLS/Insert Error:', error);
+             showToast('שגיאה בסנכרון לענן (RLS)', 'error');
+          }
         } catch(e) {
           console.error('Failed to sync to cloud', e);
         }
@@ -981,7 +989,7 @@
       
       try {
         statusEl.innerHTML = '<span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span> בודק סטטוס ענן...';
-        const res = await fetch('https://api.github.com/repos/idogal0210-web/contractor_leads_tenders/actions/runs?per_page=1');
+        const res = await fetch('https://api.github.com/repos/idogal0210-web/contractor_leads_tenders/actions/workflows/daily_leads_scan.yml/runs?per_page=1');
         if (res.ok) {
           const data = await res.json();
           const latest = data.workflow_runs && data.workflow_runs[0];
