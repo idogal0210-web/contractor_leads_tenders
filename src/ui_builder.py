@@ -502,24 +502,33 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
   <!-- Client-Side App Logic -->
   <script>
-    const rawOppsData = __OPPORTUNITIES_JSON__;
+    let rawOppsData = [];
     let currentTab = 'all';
     let currentSourceFilter = 'all';
-    let oppStates = {}; // id -> 'saved' | 'rejected' | 'contacted'
+    let oppStates = {}; // Local memory only now
 
-    function loadSavedStates() {
+    document.addEventListener("DOMContentLoaded", () => {
+      fetchLeads();
+    });
+
+    async function fetchLeads() {
       try {
-        const saved = localStorage.getItem('constructleads_states');
-        if (saved) oppStates = JSON.parse(saved);
-      } catch (e) {
-        oppStates = {};
+        const response = await fetch('http://127.0.0.1:8000/api/leads');
+        const data = await response.json();
+        rawOppsData = data;
+        // Rebuild oppStates based on match_status or default
+        rawOppsData.forEach(opp => {
+          if (opp.match_status === 'no_fit') oppStates[opp.id] = 'rejected';
+        });
+        renderCards();
+        updateMetrics();
+      } catch (err) {
+        showToast('שגיאה בטעינת נתונים מהשרת', 'error');
+        console.error(err);
       }
     }
 
     function saveStates() {
-      try {
-        localStorage.setItem('constructleads_states', JSON.stringify(oppStates));
-      } catch (e) {}
       updateMetrics();
     }
 
@@ -600,17 +609,33 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       document.getElementById('reviewedCounter').innerText = `${reviewed} נבדקו`;
     }
 
-    function setAction(oppId, action) {
-      oppStates[oppId] = action;
-      saveStates();
-      renderCards();
-      const labels = {
-        'saved': 'ההזדמנות נשמרה בטיפול',
-        'contacted': 'סומן שנוצר קשר',
-        'rejected': 'ההזדמנות נפסלה',
-        'permanently_deleted': 'ההזדמנות הוסרה לצמיתות'
-      };
-      showToast(labels[action] || 'עודכן');
+    async function setAction(oppId, action) {
+      try {
+        const payload = { action_type: action };
+        const res = await fetch(`http://127.0.0.1:8000/api/leads/${oppId}/action`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (!res.ok) throw new Error('API Error');
+        
+        // Update UI dynamically upon successful API response
+        oppStates[oppId] = action;
+        saveStates();
+        renderCards();
+
+        const labels = {
+          'saved': 'ההזדמנות נשמרה בטיפול',
+          'contacted': 'סומן שנוצר קשר',
+          'rejected': 'ההזדמנות נפסלה',
+          'permanently_deleted': 'ההזדמנות הוסרה לצמיתות',
+          'viewed': 'פתיחת מקור התבצעה'
+        };
+        showToast(labels[action] || 'עודכן');
+      } catch (err) {
+        console.error('Failed to save action to API', err);
+        showToast('שגיאה בשמירת הפעולה', 'error');
+      }
     }
 
     function permanentlyDelete(oppId) {
@@ -838,7 +863,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
                 <!-- Source Link Action -->
                 ${sourceUrl ? `
-                  <a href="${sourceUrl}" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 bg-[#181C24] hover:bg-[#202632] text-[#C2CDDC] hover:text-[#FB923C] text-xs font-medium rounded-xl border border-[#202632] flex items-center gap-1.5 transition" title="${opp.source_label || 'פתיחת דף המקור'}">
+                  <a href="${sourceUrl}" target="_blank" rel="noopener noreferrer" onclick="setAction('${opp.id}', 'viewed')" class="px-3 py-1.5 bg-[#181C24] hover:bg-[#202632] text-[#C2CDDC] hover:text-[#FB923C] text-xs font-medium rounded-xl border border-[#202632] flex items-center gap-1.5 transition" title="${opp.source_label || 'פתיחת דף המקור'}">
                     <svg class="w-3.5 h-3.5 text-[#8A97AC]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
                     <span>פתיחת מקור</span>
                   </a>
@@ -1011,9 +1036,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     }
 
     window.onload = () => {
-      loadSavedStates();
-      updateMetrics();
-      renderCards();
+      // Data is now loaded via fetchLeads() in DOMContentLoaded
     };
   </script>
 </body>

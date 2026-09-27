@@ -131,6 +131,9 @@ class ActionType(str, enum.Enum):
     WON = "won"
     LOST = "lost"
     REJECTED = "rejected"
+    PERMANENTLY_DELETED = "permanently_deleted"
+    RESTORED = "restored"
+    VIEWED = "viewed"
 
 
 # ---------------------------------------------------------------------------
