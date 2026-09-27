@@ -564,12 +564,13 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     }
 
     function updateMetrics() {
-      const total = rawOppsData.length;
-      const fastTrack = rawOppsData.filter(o => o.is_fast_track).length;
-      const tenders = rawOppsData.filter(o => o.opportunity_type === 'tender').length;
-      const saved = Object.values(oppStates).filter(s => s === 'saved' || s === 'contacted').length;
-      const rejected = Object.values(oppStates).filter(s => s === 'rejected').length;
-      const qualified = rawOppsData.filter(o => (o.score_business_fit || 0) >= 70).length;
+      const activeOpps = rawOppsData.filter(o => oppStates[o.id] !== 'permanently_deleted');
+      const total = activeOpps.length;
+      const fastTrack = activeOpps.filter(o => o.is_fast_track).length;
+      const tenders = activeOpps.filter(o => o.opportunity_type === 'tender').length;
+      const saved = activeOpps.filter(o => oppStates[o.id] === 'saved' || oppStates[o.id] === 'contacted').length;
+      const rejected = activeOpps.filter(o => oppStates[o.id] === 'rejected').length;
+      const qualified = activeOpps.filter(o => (o.score_business_fit || 0) >= 70).length;
 
       document.getElementById('statFastTrack').innerText = fastTrack;
       document.getElementById('statSaved').innerText = saved;
@@ -587,12 +588,12 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       const muniFilter = o => (o.publisher_name || '').includes('עיריי') || (o.publisher_name || '').includes('מועצה');
       const privateFilter = o => (o.publisher_name || '').includes('יפעת') || (o.source_label || '').includes('DOM') || (o.source_label || '').includes('Apify') || (o.source_label || '').includes('Facebook');
       const directFilter = o => (o.publisher_name || '').includes('הדבקה') || (o.source_label || '').includes('WhatsApp') || (o.publisher_name || '').includes('Webhook');
-      document.getElementById('agentCountGov').innerText = rawOppsData.filter(govFilter).length;
-      document.getElementById('agentCountMuni').innerText = rawOppsData.filter(muniFilter).length;
-      document.getElementById('agentCountPrivate').innerText = rawOppsData.filter(privateFilter).length;
-      document.getElementById('agentCountDirect').innerText = rawOppsData.filter(directFilter).length;
+      document.getElementById('agentCountGov').innerText = activeOpps.filter(govFilter).length;
+      document.getElementById('agentCountMuni').innerText = activeOpps.filter(muniFilter).length;
+      document.getElementById('agentCountPrivate').innerText = activeOpps.filter(privateFilter).length;
+      document.getElementById('agentCountDirect').innerText = activeOpps.filter(directFilter).length;
 
-      const reviewed = Object.keys(oppStates).length;
+      const reviewed = Object.keys(oppStates).filter(id => oppStates[id] !== 'permanently_deleted').length;
       const pct = total > 0 ? Math.min(100, Math.round((reviewed / total) * 100)) : 0;
       document.getElementById('progressPct').innerText = `${pct}%`;
       document.getElementById('sidebarProgressBar').style.width = `${pct}%`;
@@ -607,8 +608,15 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         'saved': 'ההזדמנות נשמרה בטיפול',
         'contacted': 'סומן שנוצר קשר',
         'rejected': 'ההזדמנות נפסלה',
+        'permanently_deleted': 'ההזדמנות הוסרה לצמיתות'
       };
       showToast(labels[action] || 'עודכן');
+    }
+
+    function permanentlyDelete(oppId) {
+      if (confirm('האם אתה בטוח שברצונך להסיר את הליד לצמיתות? לא ניתן יהיה לשחזר אותו.')) {
+        setAction(oppId, 'permanently_deleted');
+      }
     }
 
     function copyOppDetails(oppId) {
@@ -642,6 +650,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
       const filtered = rawOppsData.filter(opp => {
         const state = oppStates[opp.id] || 'new';
+
+        if (state === 'permanently_deleted') return false;
 
         if (currentTab === 'fast_track' && !opp.is_fast_track) return false;
         if (currentTab === 'tenders' && opp.opportunity_type !== 'tender') return false;
@@ -848,20 +858,30 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
               <!-- Status Actions -->
               <div class="flex items-center gap-2">
-                ${state !== 'saved' && state !== 'contacted' ? `
-                  <button onclick="setAction('${opp.id}', 'saved')" class="px-3.5 py-1.5 bg-[#202632] hover:bg-[#2D3545] text-[#FB923C] hover:text-white text-xs font-medium rounded-xl border border-[#2D3545] transition flex items-center gap-1.5">
-                    <span>שמור לטיפול</span>
+                ${state === 'rejected' ? `
+                  <button onclick="setAction('${opp.id}', 'new')" class="px-3.5 py-1.5 bg-[#202632] hover:bg-[#2D3545] text-[#C2CDDC] hover:text-white text-xs font-medium rounded-xl border border-[#2D3545] transition flex items-center gap-1.5">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"></path></svg>
+                    שחזר
+                  </button>
+                  <button onclick="permanentlyDelete('${opp.id}')" class="px-3.5 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 hover:text-rose-300 text-xs font-medium rounded-xl border border-rose-500/30 transition flex items-center gap-1.5" title="מחיקה שלא ניתן לשחזר">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                    הסרה לצמיתות
                   </button>
                 ` : `
-                  <span class="px-3 py-1.5 bg-emerald-500/10 text-emerald-400 text-xs font-medium rounded-xl border border-emerald-500/30 flex items-center gap-1.5">
-                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                    בטיפול פעיל
-                  </span>
+                  ${state !== 'saved' && state !== 'contacted' ? `
+                    <button onclick="setAction('${opp.id}', 'saved')" class="px-3.5 py-1.5 bg-[#202632] hover:bg-[#2D3545] text-[#FB923C] hover:text-white text-xs font-medium rounded-xl border border-[#2D3545] transition flex items-center gap-1.5">
+                      <span>שמור לטיפול</span>
+                    </button>
+                  ` : `
+                    <span class="px-3 py-1.5 bg-emerald-500/10 text-emerald-400 text-xs font-medium rounded-xl border border-emerald-500/30 flex items-center gap-1.5">
+                      <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                      בטיפול פעיל
+                    </span>
+                  `}
+                  <button onclick="setAction('${opp.id}', 'rejected')" class="px-3 py-1.5 bg-[#181C24] hover:bg-rose-500/15 text-[#8A97AC] hover:text-rose-400 text-xs font-medium rounded-xl border border-[#202632] transition">
+                    פסילה
+                  </button>
                 `}
-
-                <button onclick="setAction('${opp.id}', 'rejected')" class="px-3 py-1.5 bg-[#181C24] hover:bg-rose-500/15 text-[#8A97AC] hover:text-rose-400 text-xs font-medium rounded-xl border border-[#202632] transition">
-                  פסילה
-                </button>
               </div>
 
             </div>
