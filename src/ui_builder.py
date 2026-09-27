@@ -769,10 +769,10 @@ HTML_TEMPLATE = """<!DOCTYPE html>
               ${opp.title_value || 'ללא כותרת'}
             </h3>
 
-            <!-- Evidence Quote -->
+            <!-- Evidence Quote (Now showing AI Summary) -->
             <div class="bg-[#0B0D11] border-r-2 border-[#EA580C] px-3.5 py-2.5 rounded-l-xl text-xs text-[#C2CDDC] mb-3 font-mono leading-relaxed">
-              <span class="text-[#8A97AC] block text-[10px] font-sans font-semibold mb-0.5">ציטוט עובדתי מהמקור:</span>
-              "${opp.title_evidence || opp.work_type_evidence || opp.work_type_value || 'דרישת עבודה שזוהתה בטקסט המקורי'}"
+              <span class="text-[#8A97AC] block text-[10px] font-sans font-semibold mb-0.5">מידע נוסף:</span>
+              ${opp.title_evidence || opp.work_type_evidence || opp.work_type_value || 'דרישת עבודה שזוהתה בטקסט המקורי'}
             </div>
 
             <!-- Full Raw Content -->

@@ -51,15 +51,22 @@ async def _authenticated_scrape() -> List[Dict[str, Any]]:
                         
                         # Determine category name from URL for better logging/display
                         cat_name = "עבודות עפר" if "earthworks" in url else "בינוי"
-                        content = f"הזדמנות B2B (יפעת מכרזים - {cat_name}):\nפרויקט: {title}\nתאריך: {date_str}"
                         
-                        from src.source_resolver import resolve_official_tender_url
-                        resolved_url = resolve_official_tender_url(title, url)
+                        from src.source_resolver import resolve_official_tender_data
+                        resolved_url, official_content = resolve_official_tender_data(title, url)
                         
+                        # If we found official content, use it! Otherwise, fallback to the short Yifat text.
+                        if official_content and len(official_content.strip()) > 50:
+                            final_content = f"הזדמנות B2B (יפעת מכרזים - {cat_name}):\nפרויקט: {title}\nתאריך: {date_str}\n\n--- תוכן מהאתר הרשמי ---\n{official_content}"
+                        else:
+                            final_content = f"הזדמנות B2B (יפעת מכרזים - {cat_name}):\nפרויקט: {title}\nתאריך: {date_str}"
+                        
+                        # Unique identifier to avoid cross-category duplicates in Yifat.
+                        # Since cat_name might change, but title is the same.
                         leads.append({
-                            "content": content,
+                            "content": final_content,
                             "title": title,
-                            "source_name": f"יפעת מכרזים - {cat_name}",
+                            "source_name": f"יפעת מכרזים", # Removed cat_name to aid deduplication!
                             "url": resolved_url, # Resolved to official site if possible
                             "source_label": "סריקת עומק (DOM Parsing)",
                             "published_at": datetime.now(timezone.utc).isoformat(),

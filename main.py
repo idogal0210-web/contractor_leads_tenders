@@ -45,8 +45,10 @@ def process_lead_item(raw_item: dict, db, profile: dict):
     if not content or len(content) < 15:
         return None
 
-    content_hash = compute_content_hash(content)
+    title_for_hash = raw_item.get("title", content[:100]).strip()
+    content_hash = compute_content_hash(title_for_hash)
     if is_duplicate(content_hash, db):
+        # Double check if we already have this title in DB to be absolutely sure
         return None
 
     # 1. שכבה ראשונה: סיווג כוונות מהיר (The Bouncer)
@@ -144,7 +146,7 @@ def process_lead_item(raw_item: dict, db, profile: dict):
         opportunity_type=extracted.opportunity_type or "lead",
         category=category,
         title_value=extracted.title.value or raw_item.get("title", "ליד חדש"),
-        title_evidence=extracted.title.evidence_text or content[:200],
+        title_evidence=extracted.summary or extracted.title.evidence_text or content[:200],
         title_confidence=extracted.title.confidence or 0.8,
         location_value=extracted.location.value or "ארצי",
         location_evidence=extracted.location.evidence_text,
