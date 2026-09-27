@@ -61,8 +61,11 @@ def score_opportunity(
         trade_reasons.append(f"התאמה למקצועות: {', '.join(set(matched_trades))}")
     else:
         # התאמה כללית אם יש מונח בנייה
-        if any(term in full_val for term in ["בנייה", "שיפוץ", "עבודה", "פרויקט"]):
-            trade_score = 35
+        from processors.llm_extractor import load_skill_config
+        config = load_skill_config()
+        included_keywords = config.get("included_keywords", ["בנייה", "שיפוץ", "עבודה", "פרויקט"])
+        if any(term in full_val for term in included_keywords):
+            trade_score = config.get("scoring_rules", {}).get("general_trade_score", 35)
             trade_reasons.append("התאמה לענף כללי")
         else:
             trade_score = 10
