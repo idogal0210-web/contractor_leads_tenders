@@ -12,6 +12,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <title>__TITLE__</title>
   <script src="https://cdn.tailwindcss.com"></script>
@@ -85,7 +87,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       <button onclick="openManualLeadModal()" class="px-3 py-1.5 bg-[#EA580C] text-white rounded-lg text-xs font-medium">
         + הזנת ליד
       </button>
-      <button onclick="toggleMobileSidebar()" class="p-1.5 text-slate-300 bg-[#181C24] rounded-lg text-sm border border-[#202632]">
+      <button onclick="toggleMobileSidebar()" aria-label="פתח תפריט צד" aria-expanded="false" aria-controls="sidebar" class="p-1.5 text-slate-300 bg-[#181C24] rounded-lg text-sm border border-[#202632]">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
       </button>
     </div>
@@ -333,11 +335,11 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       <!-- Search & Trade Select -->
       <div class="flex items-center gap-2">
         <div class="relative flex-1 md:w-56">
-          <input type="text" id="searchInput" oninput="renderCards()" placeholder="חיפוש לפי כותרת, עיר..." class="w-full bg-[#0B0D11] text-xs text-white px-3 py-2 pr-8 rounded-xl border border-[#202632] focus:outline-none focus:border-[#EA580C]">
+          <input type="text" id="searchInput" aria-label="חיפוש חופשי"  oninput="renderCards()" placeholder="חיפוש לפי כותרת, עיר..." class="w-full bg-[#0B0D11] text-xs text-white px-3 py-2 pr-8 rounded-xl border border-[#202632] focus:outline-none focus:border-[#EA580C]">
           <svg class="w-3.5 h-3.5 absolute right-2.5 top-2.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
         </div>
 
-        <select id="tradeFilter" onchange="renderCards()" class="bg-[#0B0D11] text-xs text-[#C2CDDC] px-3 py-2 rounded-xl border border-[#202632] focus:outline-none focus:border-[#EA580C]">
+        <select id="tradeFilter" aria-label="סינון לפי ענף"  onchange="renderCards()" class="bg-[#0B0D11] text-xs text-[#C2CDDC] px-3 py-2 rounded-xl border border-[#202632] focus:outline-none focus:border-[#EA580C]">
           <option value="all">כל הענפים והמקצועות</option>
           <option value="general_contractor">שיפוץ כללי ובנייה</option>
           <option value="plumbing">אינסטלציה וצנרת</option>
