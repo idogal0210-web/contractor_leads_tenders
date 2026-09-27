@@ -22,10 +22,10 @@ def fetch_facebook_leads_from_apify() -> List[Dict[str, Any]]:
     
     # הגדרת הקלט לאקטור. נניח כתובות של קבוצות פייסבוק בתחום:
     run_input = {
-        "startUrls": [
-            {"url": "https://www.facebook.com/groups/Ask.shipuznik/"},      # תשאל שיפוצניק
-            {"url": "https://www.facebook.com/groups/1012921078732649/"},   # קבלנים רשומים וממליצים
-            {"url": "https://www.facebook.com/groups/439773216503926/"}     # עבודות שיפוצים הוגנים
+                "startUrls": [
+            {"url": "https://www.facebook.com/groups/232626910522034"},   # קבלנים ושיפוצים (פומבי)
+            {"url": "https://www.facebook.com/groups/173943223197043"},   # שיפוצניקים (פומבי)
+            {"url": "https://www.facebook.com/groups/1525708264342462"}   # שיפוצים (פומבי)
         ],
         "resultsLimit": 15,
         "maxPosts": 15,
@@ -44,7 +44,7 @@ def fetch_facebook_leads_from_apify() -> List[Dict[str, Any]]:
             log.warning("apify_run_failed", reason="No run returned from Apify.")
             return []
             
-        dataset_id = run.get("defaultDatasetId")
+        dataset_id = getattr(run, "default_dataset_id", getattr(run, "defaultDatasetId", None))
         if not dataset_id:
             log.warning("apify_no_dataset", reason="No dataset ID returned from run.")
             return []
