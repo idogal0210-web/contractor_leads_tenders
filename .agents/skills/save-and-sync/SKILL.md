@@ -2,7 +2,7 @@
 name: save-and-sync
 description: |
   Protocol executed whenever the user says "שמור ועדכן", "שמור וסנכרן", or "Save and update".
-  It validates project integrity, enforces zero‑waste directory hygiene, persists files, commits and pushes to GitHub, and produces a structured RTL executive summary.
+  It validates project integrity with comprehensive quality checks, enforces zero‑waste directory hygiene, persists files, commits and pushes to GitHub, and produces a structured RTL executive summary.
 ---
 
 # Save & Sync Protocol ("שמור ועדכן")
@@ -14,11 +14,15 @@ description: |
 - `RETRY_PUSH=3`   # Number of retry attempts for `git push` on transient failures.
 - `MAX_LOG_LINES=200` # Maximum lines to retain in the log artifact.
 
-## Step 1 – Code & Data Integrity Validation
-1. **Compilation / Syntax Check** – Run language‑specific compile/check commands (e.g., `python3 -m py_compile **/*.py`, `npm run lint`).
-2. **Configuration & Data Validation** – Validate JSON/YAML/TOML files (`json.load`, `yaml.safe_load`).
-3. **Import & Dependency Check** – Ensure no broken imports or missing packages.
-> **Safety Guard**: Abort immediately on any validation error and report the failing file.
+## Step 1 – Code & Data Integrity Validation (בדיקת איכות ותקינות מקיפה)
+> **הוראת ביצוע מרכזית לבדיקת איכות:**
+> בצע בדיקת איכות מקיפה למשימות שסומנו כהושלמו בצ׳קליסט. אמת כל סעיף מול הקוד והממשק בפועל. בדוק תקינות, נגישות, מובייל, שמירה, גרסאות, אישורים וטיפול בכשלים. השתמש בנתוני בדיקה מבודדים, תעדף תקלות לפי השפעתן ותקן אותן. הרץ בדיקות מתאימות ועדכן את הצ׳קליסט לפי הממצאים. אל תוסיף פיצ׳רים, תשנה את הקו העיצובי, תפעיל שירותים בתשלום או תפרסם תוכן. בסיום הצג בקצרה מה תוקן, מה אומת ומה עדיין דורש טיפול.
+
+1. **Compilation / Syntax Check** – הרץ בדיקות קומפילציה, לינט ותחביר לשפת הפרויקט (למשל `python3 -m py_compile **/*.py`, `npm run lint`).
+2. **Configuration & Data Validation** – אמת תקינות קובצי הגדרות ונתונים (`json.load`, `yaml.safe_load`).
+3. **Import & Dependency Check** – ודא אפס ייבואים שבורים ואפס תלויות חסרות.
+4. **Isolated Test Execution** – הרץ בדיקות מתאימות בסביבת בדיקה מבודדת ללא פגיעה במידע קיים.
+> **Safety Guard**: במידה ונמצאו שגיאות קריטיות שלא ניתנות לתיקון אוטומטי בטוח, עצור ודווח במדויק על התקלה לפני שממשיכים.
 
 ## Step 2 – Zero‑Waste & Lean Directory Hygiene
 - **Enforced Rule**: No file may exist in the repository that is not referenced by the build or runtime configuration.
@@ -59,7 +63,7 @@ description: |
 <div dir="rtl" style="text-align: right; font-family: system-ui, sans-serif;">
   <h3>✅ סיכום ביצוע</h3>
   <ul>
-    <li>🔧 <strong>בדיקת תקינות:</strong> <span id="integrity-status">✅</span></li>
+    <li>🔧 <strong>בדיקת איכות ותקינות:</strong> מה תוקן, מה אומת ומה עדיין דורש טיפול</li>
     <li>🧹 <strong>טיהור קבצים מיותרים:</strong> <span id="cleanup-count">0 קבצים</span></li>
     <li>📂 <strong>קבצים נשמרו:</strong> <span id="saved-files-count">0 קבצים</span></li>
     <li>🚀 <strong>סינכרון GitHub:</strong> <span id="git-status">✅ דחיפה הצליחה</span></li>
