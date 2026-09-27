@@ -305,9 +305,9 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       
       <!-- Primary Tabs -->
       <!-- Bulk Delete Button (Hidden by default) -->
-      <button id="bulkDeleteBtn" onclick="bulkDeleteSelected()" class="hidden items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-rose-500/20 text-rose-400 hover:bg-rose-500/30 border border-rose-500/30 transition-all shadow-sm">
+      <button id="bulkDeleteBtn" onclick="deleteAllRejected()" class="hidden items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-rose-500/20 text-rose-400 hover:bg-rose-500/30 border border-rose-500/30 transition-all shadow-sm">
         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-        מחק את כל הנבחרים
+        רוקן הכל לצמיתות
       </button>
 
       <div class="flex items-center gap-1 bg-[#0B0D11] p-1 rounded-xl border border-[#202632] overflow-x-auto custom-scrollbar">
@@ -1051,22 +1051,23 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       setTab('all');
     }
 
-    async function bulkDeleteSelected() {
-      const checkboxes = document.querySelectorAll('.bulk-delete-checkbox:checked');
-      if (checkboxes.length === 0) {
-        showToast('לא נבחרו לידים למחיקה', 'default');
+    async function deleteAllRejected() {
+      const ids = rawOppsData
+        .filter(opp => (oppStates[opp.id] || 'new') === 'rejected')
+        .map(opp => opp.id);
+        
+      if (ids.length === 0) {
+        showToast('אין לידים למחיקה', 'default');
         return;
       }
       
-      if (!confirm(`האם אתה בטוח שברצונך למחוק לצמיתות ${checkboxes.length} לידים?`)) return;
+      if (!confirm(`האם אתה בטוח שברצונך למחוק לצמיתות את כל ${ids.length} הלידים שנפסלו? פעולה זו אינה הפיכה.`)) return;
 
-      const ids = Array.from(checkboxes).map(cb => cb.value);
-      
       // Optimistic update
       ids.forEach(id => { oppStates[id] = 'permanently_deleted'; });
       saveStates();
       renderCards();
-      showToast(`נמחקו ${ids.length} לידים לצמיתות`, 'success');
+      showToast(`רוקנו ${ids.length} לידים לצמיתות`, 'success');
 
       // Sync to cloud
       if (supabaseClient) {
