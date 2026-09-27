@@ -254,12 +254,12 @@ def run_pipeline_and_refresh_dashboard(open_browser: bool = False):
         from src.fetchers import fetch_gov_tenders
         live_items.extend(fetch_gov_tenders())
         
-        # לוחות B2B סגורים (Authenticated DOM Parsing)
+        # 5 עיריות מובילות (Direct Municipal Scraper) - מחליף את יפעת
         try:
-            from src.b2b_authenticated import fetch_b2b_portals
-            live_items.extend(fetch_b2b_portals())
+            from src.municipal_fetcher import fetch_municipal_tenders
+            live_items.extend(fetch_municipal_tenders())
         except ImportError:
-            print("[-] B2B authenticated module not found.")
+            print("[-] Municipal scraper module not found.")
 
         # מקור אמת B2C: שאבן פייסבוק מאומת בענן (Apify)
         try:
