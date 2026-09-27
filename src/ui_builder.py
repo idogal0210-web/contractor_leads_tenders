@@ -22,8 +22,6 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       theme: {
         extend: {
           fontFamily: { sans: ['Assistant', 'sans-serif'] },
-      theme: {
-        extend: {
           colors: {
             clay: {
               950: '#0B0D11',
@@ -66,7 +64,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     }
   </style>
 </head>
-<body class="bg-[#0B0D11] text-[#F0F4F8] min-h-screen font-sans antialiased selection:bg-[#EA580C] selection:text-white flex flex-col md:flex-row">
+<body class="bg-black bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-[#050505] to-black text-[#F0F4F8] min-h-screen font-sans antialiased selection:bg-[#EA580C] selection:text-white flex flex-col md:flex-row">
 
   <!-- Mobile Top Bar -->
   <header class="md:hidden bg-[#12151B] border-b border-[#202632] p-4 flex items-center justify-between sticky top-0 z-40">
@@ -94,7 +92,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
   </header>
 
   <!-- Persistent Full-Height Sidebar -->
-  <aside id="sidebar" class="hidden md:flex flex-col w-72 lg:w-80 bg-[#12151B] border-l border-[#202632] h-screen sticky top-0 z-30 p-5 overflow-y-auto custom-scrollbar shrink-0 justify-between">
+  <aside id="sidebar" class="hidden md:flex flex-col w-72 lg:w-80 bg-white/[0.02] backdrop-blur-2xl border-l border-white/5 h-screen sticky top-0 z-30 p-5 overflow-y-auto custom-scrollbar shrink-0 justify-between shadow-2xl">
     
     <div class="space-y-6">
       <!-- Logo Header -->
