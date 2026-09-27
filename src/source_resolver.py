@@ -15,23 +15,36 @@ def resolve_official_tender_data(tender_title: str, fallback_url: str) -> tuple[
         
     client = TavilyClient(api_key=api_key)
     
-    query = f'"{tender_title}" מכרז'
+    query = f'"{tender_title}" (site:.muni.il OR site:.gov.il)'
     try:
+        # First attempt: Exact phrase match on gov/muni sites
         response = client.search(
             query=query,
-            search_depth="advanced", # Use advanced to get better raw_content
+            search_depth="advanced",
             include_raw_content=True,
-            max_results=5,
+            max_results=3,
             exclude_domains=["tenders.co.il", "nevo.co.il", "bdi.co.il", "ifatautotender.co.il", "ifatautotender.com"]
         )
         
         results = response.get("results", [])
         if not results:
+            # Second attempt: Without exact quotes but still targeting gov/muni
             response = client.search(
-                query=f"{tender_title} מכרז",
+                query=f'{tender_title} מכרז (site:.muni.il OR site:.gov.il)',
                 search_depth="advanced",
                 include_raw_content=True,
-                max_results=5,
+                max_results=3,
+                exclude_domains=["tenders.co.il", "nevo.co.il", "bdi.co.il", "ifatautotender.co.il", "ifatautotender.com"]
+            )
+            results = response.get("results", [])
+            
+        if not results:
+            # Third attempt: Any public site (news, local portals)
+            response = client.search(
+                query=f'"{tender_title}" מכרז',
+                search_depth="advanced",
+                include_raw_content=True,
+                max_results=3,
                 exclude_domains=["tenders.co.il", "nevo.co.il", "bdi.co.il", "ifatautotender.co.il", "ifatautotender.com"]
             )
             results = response.get("results", [])

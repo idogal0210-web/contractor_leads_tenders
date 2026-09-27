@@ -37,6 +37,7 @@ def fetch_gov_tenders() -> List[Dict[str, Any]]:
             title = record.get("שם הליך", "")
             publisher = record.get("שם יחידה מפרסמת", "")
             tender_id = record.get("מספר הליך", "")
+            pub_number = record.get("מספר פרסום", "")
             status = record.get("סטטוס", "")
             published_date = record.get("תאריך פרסום", "")
             
@@ -51,15 +52,19 @@ def fetch_gov_tenders() -> List[Dict[str, Any]]:
                 f"מכרז ממשלתי רשמי: {title}\n"
                 f"מפרסם: {publisher}\n"
                 f"מספר הליך: {tender_id}\n"
+                f"מספר פרסום: {pub_number}\n"
                 f"סטטוס במערכת: {status}\n"
                 f"תאריך עדכון/פרסום: {published_date}"
             )
+            
+            # Use 'מספר פרסום' for the URL which maps directly to the specific tender page
+            tender_url = f"https://mr.gov.il/ilgstorefront/he/p/{pub_number}" if pub_number else f"https://mr.gov.il/ilgstorefront/he/search/?q={tender_id}"
             
             leads.append({
                 "content": content,
                 "title": title,
                 "source_name": f"Gov.il API - {publisher}",
-                "url": f"https://mr.gov.il/Tender/{tender_id}",
+                "url": tender_url,
                 "source_label": "אינטגרציית M2M ישירה (מכרז ציבורי)",
                 "published_at": datetime.now(timezone.utc).isoformat(),
                 "discovered_at": datetime.now(timezone.utc).isoformat()
